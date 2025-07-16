@@ -6,6 +6,8 @@ import '../../features/auth/data/models/auth_response.dart';
 import '../models/api_response.dart';
 import '../constants/api_constants.dart';
 import '../../core/models/user_model.dart';
+import 'storage_service.dart';
+import 'storage_service_factory.dart';
 
 class AuthService {
   final dio.Dio _dio = dio.Dio(
@@ -17,7 +19,7 @@ class AuthService {
     ),
   );
 
-  final FlutterSecureStorage _storage = const FlutterSecureStorage();
+  final StorageService _storage = getStorageService();
 
   // Login
   Future<ApiResponse<AuthResponse>> login(LoginRequest request) async {
