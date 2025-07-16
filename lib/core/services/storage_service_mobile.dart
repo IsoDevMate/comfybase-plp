@@ -15,4 +15,4 @@ class SecureStorageService implements StorageService {
   Future<void> delete({required String key}) => _storage.delete(key: key);
 }
 
-StorageService getStorageService() => SecureStorageService();
+StorageService createStorageService() => SecureStorageService();

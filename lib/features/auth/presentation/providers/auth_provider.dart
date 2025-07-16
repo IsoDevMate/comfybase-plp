@@ -78,4 +78,16 @@ class AuthProvider extends ChangeNotifier {
     }
     notifyListeners();
   }
+
+  Future<void> debugStorage() async {
+    final storage = getStorageService();
+    final accessToken = await storage.read(key: 'accessToken');
+    final refreshToken = await storage.read(key: 'refreshToken');
+    print('=== STORAGE DEBUG ===');
+    print('Access Token: $accessToken');
+    print('Refresh Token: $refreshToken');
+    print('Is Logged In: $isLoggedIn');
+    print('User: \\${user?.email}');
+    print('==================');
+  }
 }
