@@ -18,7 +18,8 @@ class _SplashScreenState extends State<SplashScreen> {
 
   Future<void> _checkAuth() async {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    await Future.delayed(const Duration(seconds: 2));
+    await authProvider.checkAuthStatus();
+    await Future.delayed(const Duration(seconds: 1));
     if (authProvider.isLoggedIn) {
       Navigator.pushReplacementNamed(context, '/profile');
     } else {

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/services/auth_service.dart';
+import '../../../../core/services/storage_service_factory.dart';
 import '../../data/models/login_request.dart';
 import '../../data/models/register_request.dart';
 import '../../../../core/models/user_model.dart';
@@ -55,6 +56,26 @@ class AuthProvider extends ChangeNotifier {
     await _authService.logout();
     user = null;
     isLoggedIn = false;
+    notifyListeners();
+  }
+
+  Future<void> checkAuthStatus() async {
+    final storage = getStorageService();
+    final token = await storage.read(key: 'accessToken');
+    if (token != null && token.length > 20) {
+      // Optionally, fetch user profile from API
+      final response = await _authService.getProfile();
+      if (response.success && response.data != null) {
+        user = response.data!.user;
+        isLoggedIn = true;
+      } else {
+        user = null;
+        isLoggedIn = false;
+      }
+    } else {
+      user = null;
+      isLoggedIn = false;
+    }
     notifyListeners();
   }
 }
