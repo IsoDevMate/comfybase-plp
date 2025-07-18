@@ -2,7 +2,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import '../constants/api_constants.dart';
-import '../services/storage_service.dart';
+import '../services/storage_service_factory.dart';
 import '../constants/storage_constants.dart';
 
 class DioClient {
@@ -41,8 +41,8 @@ class DioClient {
   Interceptor _getAuthInterceptor() {
     return InterceptorsWrapper(
       onRequest: (options, handler) async {
-        final token = await StorageService.getSecureString(
-          StorageConstants.accessToken,
+        final token = await getStorageService().read(
+          key: StorageConstants.accessToken,
         );
         if (token != null && token.isNotEmpty) {
           options.headers['Authorization'] = 'Bearer $token';
@@ -54,15 +54,13 @@ class DioClient {
           // Token expired, try to refresh
           final refreshed = await _refreshToken();
           if (refreshed) {
-            // Retry the request
-            final token = await StorageService.getSecureString(
-              StorageConstants.accessToken,
+            final token = await getStorageService().read(
+              key: StorageConstants.accessToken,
             );
             error.requestOptions.headers['Authorization'] = 'Bearer $token';
             final response = await _dio.fetch(error.requestOptions);
             handler.resolve(response);
           } else {
-            // Refresh failed, logout user
             await _logout();
             handler.next(error);
           }
@@ -101,8 +99,8 @@ class DioClient {
 
   Future<bool> _refreshToken() async {
     try {
-      final refreshToken = await StorageService.getSecureString(
-        StorageConstants.refreshToken,
+      final refreshToken = await getStorageService().read(
+        key: StorageConstants.refreshToken,
       );
       if (refreshToken == null) return false;
 
@@ -115,13 +113,13 @@ class DioClient {
         final newToken = response.data['data']['accessToken'];
         final newRefreshToken = response.data['data']['refreshToken'];
 
-        await StorageService.setSecureString(
-          StorageConstants.accessToken,
-          newToken,
+        await getStorageService().write(
+          key: StorageConstants.accessToken,
+          value: newToken,
         );
-        await StorageService.setSecureString(
-          StorageConstants.refreshToken,
-          newRefreshToken,
+        await getStorageService().write(
+          key: StorageConstants.refreshToken,
+          value: newRefreshToken,
         );
 
         return true;
@@ -133,10 +131,10 @@ class DioClient {
   }
 
   Future<void> _logout() async {
-    await StorageService.removeSecureString(StorageConstants.accessToken);
-    await StorageService.removeSecureString(StorageConstants.refreshToken);
-    await StorageService.remove(StorageConstants.userId);
-    await StorageService.remove(StorageConstants.userRole);
-    await StorageService.remove(StorageConstants.userProfile);
+    await getStorageService().delete(key: StorageConstants.accessToken);
+    await getStorageService().delete(key: StorageConstants.refreshToken);
+    await getStorageService().delete(key: StorageConstants.userId);
+    await getStorageService().delete(key: StorageConstants.userRole);
+    await getStorageService().delete(key: StorageConstants.userProfile);
   }
 }
