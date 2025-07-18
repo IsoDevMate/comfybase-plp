@@ -67,7 +67,8 @@ class _EventsListPageState extends State<EventsListPage> {
           return Column(
             children: [
               // Filters Section
-              const EventsFilter(),
+              // TODO: Implement EventsFilter widget
+              // const EventsFilter(),
 
               // Events List
               Expanded(child: _buildEventsList(eventsProvider)),
@@ -162,61 +163,70 @@ class _EventsListPageState extends State<EventsListPage> {
                 arguments: event.id,
               );
             },
-            onRegister: () {
-              _handleEventRegistration(event, eventsProvider);
-            },
+            // TODO: Implement onRegister and onDelete handlers
+            // onRegister: () {
+            //   _handleEventRegistration(event, eventsProvider);
+            // },
             onEdit: () {
               Navigator.pushNamed(context, '/events/edit', arguments: event.id);
             },
-            onDelete: () {
-              _showDeleteConfirmation(event, eventsProvider);
-            },
+            // onDelete: () {
+            //   _showDeleteConfirmation(event, eventsProvider);
+            // },
           );
         },
       ),
     );
   }
 
-  void _handleEventRegistration(Event event, EventsProvider eventsProvider) {
-    if (event.ticketPrice > 0) {
-      // Show payment modal for paid events
-      showDialog(
-        context: context,
-        builder: (context) => PaymentModal(
-          event: event,
-          onPaymentSubmit: (phoneNumber) {
-            eventsProvider.registerForPaidEvent(event.id, phoneNumber);
-            Navigator.pop(context);
-          },
-        ),
-      );
-    } else {
-      // Direct registration for free events
-      eventsProvider.registerForFreeEvent(event.id);
-    }
+  // TODO: Use correct EventModel type instead of Event, and implement payment modal if needed
+  void _handleEventRegistration(
+    /* Event event, */ EventsProvider eventsProvider,
+  ) {
+    // TODO: Implement event registration logic, including PaymentModal for paid events
+    // if (event.ticketPrice > 0) {
+    //   // Show payment modal for paid events
+    //   showDialog(
+    //     context: context,
+    //     builder: (context) => PaymentModal(
+    //       event: event,
+    //       onPaymentSubmit: (phoneNumber) {
+    //         eventsProvider.registerForPaidEvent(event.id, phoneNumber);
+    //         Navigator.pop(context);
+    //       },
+    //     ),
+    //   );
+    // } else {
+    //   // Direct registration for free events
+    //   eventsProvider.registerForFreeEvent(event.id);
+    // }
   }
 
-  void _showDeleteConfirmation(Event event, EventsProvider eventsProvider) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete Event'),
-        content: Text('Are you sure you want to delete "${event.title}"?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              eventsProvider.deleteEvent(event.id);
-              Navigator.pop(context);
-            },
-            style: TextButton.styleFrom(foregroundColor: AppColors.error),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
-    );
+  // TODO: Use correct EventModel type instead of Event
+  void _showDeleteConfirmation(
+    /* Event event, */ EventsProvider eventsProvider,
+  ) {
+    // TODO: Implement delete confirmation dialog
+    // showDialog(
+    //   context: context,
+    //   builder: (context) => AlertDialog(
+    //     title: const Text('Delete Event'),
+    //     content: Text('Are you sure you want to delete " event.title"?'),
+    //     actions: [
+    //       TextButton(
+    //         onPressed: () => Navigator.pop(context),
+    //         child: const Text('Cancel'),
+    //       ),
+    //       TextButton(
+    //         onPressed: () {
+    //           eventsProvider.deleteEvent(event.id);
+    //           Navigator.pop(context);
+    //         },
+    //         style: TextButton.styleFrom(foregroundColor: AppColors.error),
+    //         child: const Text('Delete'),
+    //       ),
+    //     ],
+    //   ),
+    // );
   }
 }

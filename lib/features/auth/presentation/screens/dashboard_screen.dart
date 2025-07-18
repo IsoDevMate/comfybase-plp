@@ -5,6 +5,8 @@ import '../providers/auth_provider.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/theme/app_animations.dart';
+import 'package:kenyanvalley/features/events/presentation/screens/events_list_screen.dart';
+import 'package:kenyanvalley/features/auth/presentation/screens/profile_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({Key? key}) : super(key: key);
@@ -69,7 +71,7 @@ class _DashboardScreenState extends State<DashboardScreen>
           children: [
             _buildDashboardHome(user),
             _buildEventsPage(),
-            _buildProfilePage(user, authProvider),
+            const ProfileScreen(),
             _buildSettingsPage(authProvider),
           ],
         ),
@@ -538,32 +540,7 @@ class _DashboardScreenState extends State<DashboardScreen>
   }
 
   Widget _buildEventsPage() {
-    return Center(
-      child: Text('Events Page', style: AppTextStyles.headlineMedium),
-    );
-  }
-
-  Widget _buildProfilePage(dynamic user, AuthProvider authProvider) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.person, size: 80, color: AppColors.primary),
-          const SizedBox(height: 16),
-          Text(user.fullName ?? 'User', style: AppTextStyles.headlineMedium),
-          Text(user.email, style: AppTextStyles.bodyMedium),
-          const SizedBox(height: 24),
-          ElevatedButton(
-            onPressed: () async {
-              await authProvider.logout();
-              if (!mounted) return;
-              Navigator.pushReplacementNamed(context, '/login');
-            },
-            child: const Text('Logout'),
-          ),
-        ],
-      ),
-    );
+    return const EventsListPage();
   }
 
   Widget _buildSettingsPage(AuthProvider authProvider) {
