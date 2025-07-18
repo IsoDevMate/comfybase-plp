@@ -473,8 +473,10 @@ class _LoginScreenState extends State<LoginScreen>
         _passwordController.text,
       );
 
+      if (!mounted) return;
+
       if (authProvider.isLoggedIn) {
-        Navigator.pushReplacementNamed(context, '/dashboard');
+        Navigator.pushReplacementNamed(context, '/profile');
       }
     }
   }

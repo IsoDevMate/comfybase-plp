@@ -4,6 +4,7 @@ part 'user_model.g.dart';
 
 @JsonSerializable()
 class UserModel {
+  @JsonKey(name: '_id')
   final String id;
   final String email;
   final String firstName;
@@ -15,6 +16,7 @@ class UserModel {
   final Map<String, dynamic>? socialLinks;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final bool? isVerified;
 
   const UserModel({
     required this.id,
@@ -28,6 +30,7 @@ class UserModel {
     this.socialLinks,
     required this.createdAt,
     required this.updatedAt,
+    this.isVerified,
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) =>
@@ -52,6 +55,7 @@ class UserModel {
     Map<String, dynamic>? socialLinks,
     DateTime? createdAt,
     DateTime? updatedAt,
+    bool? isVerified,
   }) {
     return UserModel(
       id: id ?? this.id,
@@ -65,6 +69,7 @@ class UserModel {
       socialLinks: socialLinks ?? this.socialLinks,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      isVerified: isVerified ?? this.isVerified,
     );
   }
 }

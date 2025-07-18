@@ -26,7 +26,6 @@ class ComfyBaseApp extends StatelessWidget {
             darkTheme: AppTheme.darkTheme,
             themeMode: ThemeMode.system,
             routerConfig: AppRouter.router,
-            debugShowCheckedModeBanner: false,
           );
         },
       ),

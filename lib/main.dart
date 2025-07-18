@@ -5,6 +5,7 @@ import 'core/services/auth_service.dart';
 import 'features/auth/presentation/screens/login_screen.dart';
 import 'features/auth/presentation/screens/register_screen.dart';
 import 'features/auth/presentation/screens/profile_screen.dart';
+import 'features/auth/presentation/screens/dashboard_screen.dart';
 
 void main() {
   runApp(
@@ -25,11 +26,12 @@ class MainApp extends StatelessWidget {
     return MaterialApp(
       title: 'ComfyBase',
       theme: ThemeData(useMaterial3: true),
-      initialRoute: '/login',
+      initialRoute: '/',
       routes: {
         '/login': (context) => const LoginScreen(),
         '/register': (context) => const RegisterScreen(),
         '/profile': (context) => const ProfileScreen(),
+        '/' :  (context) => const DashboardScreen(),
       },
     );
   }

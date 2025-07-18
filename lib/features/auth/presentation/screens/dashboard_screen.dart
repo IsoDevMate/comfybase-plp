@@ -556,6 +556,7 @@ class _DashboardScreenState extends State<DashboardScreen>
           ElevatedButton(
             onPressed: () async {
               await authProvider.logout();
+              if (!mounted) return;
               Navigator.pushReplacementNamed(context, '/login');
             },
             child: const Text('Logout'),

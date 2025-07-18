@@ -3,7 +3,7 @@ import '../../../../core/services/auth_service.dart';
 import '../../../../core/services/storage_service_factory.dart';
 import '../../data/models/login_request.dart';
 import '../../data/models/register_request.dart';
-import '../../../../core/models/user_model.dart';
+import '../../../../core/models/user_model.dart' as core_models;
 import '../../../../core/models/api_response.dart';
 import '../../data/models/auth_response.dart';
 
@@ -12,7 +12,7 @@ class AuthProvider extends ChangeNotifier {
 
   bool isLoading = false;
   String? error;
-  UserModel? user;
+  core_models.UserModel? user;
   bool isLoggedIn = false;
 
   AuthProvider(this._authService);
@@ -26,7 +26,7 @@ class AuthProvider extends ChangeNotifier {
       LoginRequest(email: email, password: password),
     );
     if (response.success && response.data != null) {
-      user = response.data!.user;
+      user = response.data!.user as core_models.UserModel;
       isLoggedIn = true;
     } else {
       error = response.message;
@@ -66,7 +66,7 @@ class AuthProvider extends ChangeNotifier {
       // Optionally, fetch user profile from API
       final response = await _authService.getProfile();
       if (response.success && response.data != null) {
-        user = response.data!.user;
+        user = response.data!.user as core_models.UserModel;
         isLoggedIn = true;
       } else {
         user = null;
