@@ -71,6 +71,29 @@ class EventsProvider extends ChangeNotifier {
     }
   }
 
+  // Update event
+  Future<bool> updateEvent(String eventId, EventModel event) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+    try {
+      final updated = await _eventService.updateEvent(eventId, event);
+      final idx = _events.indexWhere((e) => e.id == eventId);
+      if (idx != -1) {
+        _events[idx] = updated;
+      }
+      if (_selectedEvent?.id == eventId) _selectedEvent = updated;
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _error = e.toString();
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
   // Delete event
   Future<bool> deleteEvent(String eventId) async {
     _isLoading = true;
