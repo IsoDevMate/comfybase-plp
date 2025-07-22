@@ -476,7 +476,7 @@ class _LoginScreenState extends State<LoginScreen>
       if (!mounted) return;
 
       if (authProvider.isLoggedIn) {
-        Navigator.pushReplacementNamed(context, '/profile');
+        Navigator.pushReplacementNamed(context, '/');
       }
     }
   }

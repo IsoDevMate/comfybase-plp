@@ -90,4 +90,51 @@ class AuthProvider extends ChangeNotifier {
     print('User: \\${user?.email}');
     print('==================');
   }
+
+  /// Fetch the latest user profile from the backend and update local state
+  Future<void> fetchProfile() async {
+    isLoading = true;
+    error = null;
+    notifyListeners();
+
+    final response = await _authService.getProfile();
+    if (response.success && response.data != null) {
+      user = response.data!.user as core_models.UserModel;
+      isLoggedIn = true;
+    } else {
+      error = response.message;
+      isLoggedIn = false;
+    }
+    isLoading = false;
+    notifyListeners();
+  }
+
+  /// Update the user profile on the backend and refresh local state
+  Future<bool> updateProfile(Map<String, dynamic> data) async {
+    isLoading = true;
+    error = null;
+    notifyListeners();
+
+    try {
+      // You may need to use your ApiClient here if AuthService doesn't have update
+      // For now, let's assume _authService has an updateProfile method
+      final response = await _authService.updateProfile(data);
+      if (response.success) {
+        await fetchProfile();
+        isLoading = false;
+        notifyListeners();
+        return true;
+      } else {
+        error = response.message;
+        isLoading = false;
+        notifyListeners();
+        return false;
+      }
+    } catch (e) {
+      error = e.toString();
+      isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
 }

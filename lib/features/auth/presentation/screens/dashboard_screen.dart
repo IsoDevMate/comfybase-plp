@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kenyanvalley/features/auth/presentation/screens/settings_screen.dart';
 import 'package:provider/provider.dart';
 import '../../../../core/theme/app_demsions.dart';
 import '../providers/auth_provider.dart';
@@ -465,7 +466,7 @@ class _DashboardScreenState extends State<DashboardScreen>
               Icons.add_circle_outline,
               AppColors.primary,
               () {
-                // Handle create event
+                Navigator.pushNamed(context, '/create-event');
               },
             ),
             _buildActionCard(
@@ -544,9 +545,7 @@ class _DashboardScreenState extends State<DashboardScreen>
   }
 
   Widget _buildSettingsPage(AuthProvider authProvider) {
-    return Center(
-      child: Text('Settings Page', style: AppTextStyles.headlineMedium),
-    );
+    return const SettingsPage();
   }
 
   Widget _buildBottomNavigationBar() {

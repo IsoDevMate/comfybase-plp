@@ -77,6 +77,12 @@ class _ProfileScreenState extends State<ProfileScreen>
                 pinned: true,
                 elevation: 0,
                 backgroundColor: Colors.transparent,
+                leading: Navigator.canPop(context)
+                    ? IconButton(
+                        icon: const Icon(Icons.arrow_back, color: Colors.black),
+                        onPressed: () => Navigator.pop(context),
+                      )
+                    : null,
                 flexibleSpace: FlexibleSpaceBar(
                   background: Container(
                     decoration: BoxDecoration(
@@ -517,8 +523,10 @@ class _ProfileScreenState extends State<ProfileScreen>
                   child: _buildQuickActionButton(
                     icon: Icons.edit_outlined,
                     label: 'Edit Profile',
-                    onTap: () {
-                      // Navigate to edit profile
+                    onTap: () async {
+                      // Navigate and refresh profile on return
+                      await Navigator.pushNamed(context, '/edit-profile');
+                      setState(() {}); // Refresh profile info after editing
                     },
                   ),
                 ),
@@ -606,13 +614,17 @@ class _ProfileScreenState extends State<ProfileScreen>
               icon: Icons.security_outlined,
               title: 'Security',
               subtitle: 'Change password and security settings',
-              onTap: () {},
+              onTap: () {
+                Navigator.pushNamed(context, '/settings');
+              },
             ),
             _buildSettingsItem(
-              icon: Icons.help_outline,
-              title: 'Help & Support',
-              subtitle: 'Get help and contact support',
-              onTap: () {},
+              icon: Icons.settings,
+              title: 'Settings',
+              subtitle: 'App settings and preferences',
+              onTap: () {
+                Navigator.pushNamed(context, '/settings');
+              },
             ),
           ],
         ),

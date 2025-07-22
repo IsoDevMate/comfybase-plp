@@ -236,6 +236,46 @@ class AuthService {
     }
   }
 
+  /// Update user profile
+  Future<ApiResponse<dynamic>> updateProfile(Map<String, dynamic> data) async {
+    try {
+      final token = await _storage.read(key: 'accessToken');
+      if (token == null) {
+        return ApiResponse<dynamic>(
+          success: false,
+          message: 'No access token found',
+          data: null,
+          errors: ['No access token'],
+        );
+      }
+
+      final response = await _dio.put(
+        ApiConstants.updateProfile,
+        data: data,
+        options: dio.Options(headers: {'Authorization': 'Bearer $token'}),
+      );
+
+      return ApiResponse<dynamic>.fromJson(
+        response.data,
+        (json) => json, // You can parse to your user model if needed
+      );
+    } on dio.DioException catch (e) {
+      return ApiResponse<dynamic>(
+        success: false,
+        message: 'Network error: ${e.message}',
+        data: null,
+        errors: [e.toString()],
+      );
+    } catch (e) {
+      return ApiResponse<dynamic>(
+        success: false,
+        message: 'Profile update failed: $e',
+        data: null,
+        errors: [e.toString()],
+      );
+    }
+  }
+
   Future<void> logout() async {
     print('AuthService: Logging out - clearing tokens');
     try {
