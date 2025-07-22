@@ -3,10 +3,17 @@ import '../models/api_response.dart';
 import 'dio_client.dart';
 
 class ApiClient {
+  static final ApiClient _instance = ApiClient._internal();
+  factory ApiClient() => _instance;
+  ApiClient._internal();
   final DioClient _dioClient = DioClient();
 
-  Dio get _dio => _dioClient.dio;
+  void init() {
+    // _dioClient = DioClient();
+    _dioClient.init(); // DioClient is initialized
+  }
 
+  Dio get _dio => _dioClient.dio;
   // GET request
   Future<ApiResponse<T>> get<T>(
     String path, {

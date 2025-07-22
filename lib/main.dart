@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kenyanvalley/core/network/api_client.dart';
 import 'package:provider/provider.dart';
 import 'features/auth/presentation/providers/auth_provider.dart';
 import 'core/services/auth_service.dart';
@@ -13,8 +14,11 @@ import 'features/events/presentation/screens/events_list_screen.dart';
 import 'features/auth/presentation/screens/edit_profile_screen.dart';
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  DioClient().init(); // <-- Add this line
+ WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize network clients
+  DioClient().init();
+  ApiClient().init();
   runApp(
     MultiProvider(
       providers: [
@@ -43,7 +47,6 @@ class MainApp extends StatelessWidget {
         '/events': (context) => const EventsListPage(),
         '/login': (context) => const LoginScreen(),
         '/register': (context) => const RegisterScreen(),
-        // Add other routes as needed
       },
     );
   }

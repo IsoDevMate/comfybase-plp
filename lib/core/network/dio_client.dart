@@ -13,6 +13,7 @@ class DioClient {
   late Dio _dio;
 
   Dio get dio => _dio;
+  
 
   void init() {
     _dio = Dio(
