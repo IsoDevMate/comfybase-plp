@@ -82,14 +82,26 @@ class Note extends Equatable {
 
   // Handle dynamic user field (can be String ID or User object)
   static dynamic _userFromJson(dynamic user) {
+    if (user == null) return null;
     if (user is String) return user;
-    if (user is Map<String, dynamic>) return User.fromJson(user);
+    if (user is Map<String, dynamic>) {
+      try {
+        return User.fromJson(user);
+      } catch (e) {
+        // If parsing as User fails, return the id if available
+        return user['_id']?.toString() ?? user['id']?.toString();
+      }
+    }
     return null;
   }
 
   static dynamic _userToJson(dynamic user) {
+    if (user == null) return null;
     if (user is User) return user.toJson();
-    return user;
+    if (user is Map<String, dynamic>) {
+      return user; // Return as is if it's already a map
+    }
+    return user.toString(); // Fallback to string representation
   }
 
   factory Note.fromJson(Map<String, dynamic> json) => _$NoteFromJson(json);
