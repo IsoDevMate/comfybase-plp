@@ -1,10 +1,11 @@
 class StorageConstants {
-  static const String accessToken = 'access_token';
-  static const String refreshToken = 'refresh_token';
-  static const String userId = 'user_id';
-  static const String userRole = 'user_role';
-  static const String userProfile = 'user_profile';
-  static const String isFirstLaunch = 'is_first_launch';
-  static const String selectedTheme = 'selected_theme';
-  static const String selectedLanguage = 'selected_language';
+  // Use camelCase consistently for all keys
+  static const String accessToken = 'accessToken';
+  static const String refreshToken = 'refreshToken';
+  static const String userId = 'userId';
+  static const String userRole = 'userRole';
+  static const String userProfile = 'userProfile';
+  static const String isFirstLaunch = 'isFirstLaunch';
+  static const String selectedTheme = 'selectedTheme';
+  static const String selectedLanguage = 'selectedLanguage';
 }

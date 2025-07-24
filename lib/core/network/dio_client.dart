@@ -42,11 +42,24 @@ class DioClient {
   Interceptor _getAuthInterceptor() {
     return InterceptorsWrapper(
       onRequest: (options, handler) async {
-        final token = await getStorageService().read(
-          key: StorageConstants.accessToken,
-        );
-        if (token != null && token.isNotEmpty) {
-          options.headers['Authorization'] = 'Bearer $token';
+        try {
+          final token = await getStorageService().read(
+            key: StorageConstants.accessToken,
+          );
+          if (token != null && token.isNotEmpty) {
+            options.headers['Authorization'] = 'Bearer $token';
+            if (kDebugMode) {
+              print('Added Authorization header with token: ${token.substring(0, 20)}...');
+            }
+          } else {
+            if (kDebugMode) {
+              print('No access token found in storage');
+            }
+          }
+        } catch (e) {
+          if (kDebugMode) {
+            print('Error getting access token: $e');
+          }
         }
         handler.next(options);
       },

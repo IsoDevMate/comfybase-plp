@@ -13,9 +13,14 @@ import 'features/auth/presentation/screens/settings_screen.dart';
 import 'package:kenyanvalley/features/events/presentation/screens/events_list_screen.dart';
 import 'package:kenyanvalley/features/events/presentation/screens/create_event_screen.dart';
 import 'features/auth/presentation/screens/edit_profile_screen.dart';
+import 'core/services/storage_service_factory.dart';
+import 'core/services/hive_storage_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize Hive storage
+  await HiveStorageService.init();
 
   // Initialize network clients
   DioClient().init();

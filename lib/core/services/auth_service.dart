@@ -5,6 +5,7 @@ import '../../features/auth/data/models/register_request.dart';
 import '../../features/auth/data/models/auth_response.dart';
 import '../models/api_response.dart';
 import '../constants/api_constants.dart';
+import '../constants/storage_constants.dart';
 import '../../core/models/user_model.dart' as core_models;
 import 'storage_service.dart';
 import 'storage_service_factory.dart';
@@ -86,14 +87,14 @@ class AuthService {
           final refreshToken = authResponse.tokens.refreshToken;
 
           if (accessToken.isNotEmpty) {
-            await _storage.write(key: 'accessToken', value: accessToken);
+            await _storage.write(key: StorageConstants.accessToken, value: accessToken);
             print('AuthService: Access token stored successfully');
           } else {
             print('AuthService: Access token is empty');
           }
 
           if (refreshToken.isNotEmpty) {
-            await _storage.write(key: 'refreshToken', value: refreshToken);
+            await _storage.write(key: StorageConstants.refreshToken, value: refreshToken);
             print('AuthService: Refresh token stored successfully');
           } else {
             print('AuthService: Refresh token is empty');

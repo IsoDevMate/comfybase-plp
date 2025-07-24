@@ -7,9 +7,9 @@ part of 'event_model.dart';
 // **************************************************************************
 
 Coordinates _$CoordinatesFromJson(Map<String, dynamic> json) => Coordinates(
-  latitude: (json['latitude'] as num).toDouble(),
-  longitude: (json['longitude'] as num).toDouble(),
-);
+      latitude: (json['latitude'] as num).toDouble(),
+      longitude: (json['longitude'] as num).toDouble(),
+    );
 
 Map<String, dynamic> _$CoordinatesToJson(Coordinates instance) =>
     <String, dynamic>{
@@ -38,23 +38,24 @@ Map<String, dynamic> _$EventLocationToJson(EventLocation instance) =>
     };
 
 EventModel _$EventModelFromJson(Map<String, dynamic> json) => EventModel(
-  id: json['_id'] as String,
-  title: json['title'] as String,
-  description: json['description'] as String,
-  organizer: json['organizer'],
-  type: json['type'] as String,
-  status: json['status'] as String,
-  startDate: DateTime.parse(json['startDate'] as String),
-  endDate: DateTime.parse(json['endDate'] as String),
-  location: EventLocation.fromJson(json['location'] as Map<String, dynamic>),
-  capacity: (json['capacity'] as num?)?.toInt(),
-  ticketPrice: (json['ticketPrice'] as num?)?.toInt(),
-  coverImage: json['coverImage'] as String?,
-  sessions: json['sessions'] as List<dynamic>,
-  attendees: json['attendees'] as List<dynamic>,
-  createdAt: DateTime.parse(json['createdAt'] as String),
-  updatedAt: DateTime.parse(json['updatedAt'] as String),
-);
+      id: json['_id'] as String,
+      title: json['title'] as String,
+      description: json['description'] as String,
+      organizer: json['organizer'],
+      type: json['type'] as String,
+      status: json['status'] as String,
+      startDate: DateTime.parse(json['startDate'] as String),
+      endDate: DateTime.parse(json['endDate'] as String),
+      location:
+          EventLocation.fromJson(json['location'] as Map<String, dynamic>),
+      capacity: (json['capacity'] as num?)?.toInt(),
+      ticketPrice: (json['ticketPrice'] as num?)?.toInt(),
+      coverImage: json['coverImage'] as String?,
+      sessions: json['sessions'] as List<dynamic>,
+      attendees: json['attendees'] as List<dynamic>,
+      createdAt: DateTime.parse(json['createdAt'] as String),
+      updatedAt: DateTime.parse(json['updatedAt'] as String),
+    );
 
 Map<String, dynamic> _$EventModelToJson(EventModel instance) =>
     <String, dynamic>{

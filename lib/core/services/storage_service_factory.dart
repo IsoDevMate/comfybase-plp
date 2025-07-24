@@ -1,5 +1,6 @@
 import 'storage_service.dart';
-import 'storage_service_shared_prefs.dart'
-    if (dart.library.html) 'storage_service_web.dart';
+import 'hive_storage_service.dart';
 
-StorageService getStorageService() => createStorageService();
+/// Returns the appropriate storage service implementation
+/// Currently using Hive for all platforms
+StorageService getStorageService() => createHiveStorageService();
