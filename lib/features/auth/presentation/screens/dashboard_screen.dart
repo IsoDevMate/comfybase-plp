@@ -8,6 +8,9 @@ import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/theme/app_animations.dart';
 import 'package:kenyanvalley/features/events/presentation/screens/events_list_screen.dart';
 import 'package:kenyanvalley/features/auth/presentation/screens/profile_screen.dart';
+import 'package:kenyanvalley/features/events/presentation/providers/events_provider.dart';
+import 'package:kenyanvalley/features/events/data/models/event_model.dart';
+import 'package:intl/intl.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({Key? key}) : super(key: key);
@@ -23,6 +26,16 @@ class _DashboardScreenState extends State<DashboardScreen>
 
   int _selectedIndex = 0;
   final PageController _pageController = PageController();
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Fetch organizer events when the dashboard loads
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final eventsProvider = Provider.of<EventsProvider>(context, listen: false);
+      eventsProvider.getOrganizerEvents();
+    });
+  }
 
   @override
   void initState() {
@@ -160,94 +173,7 @@ class _DashboardScreenState extends State<DashboardScreen>
     );
   }
 
-  Widget _buildQuickStats() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Quick Stats',
-          style: AppTextStyles.titleLarge.copyWith(fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: AppDimensions.spacingMd),
-        Row(
-          children: [
-            Expanded(
-              child: AnimatedBuilder(
-                animation: _cardAnimations[0],
-                builder: (context, child) {
-                  return Transform.scale(
-                    scale: _cardAnimations[0].value,
-                    child: _buildStatCard(
-                      'Total Events',
-                      '24',
-                      Icons.event,
-                      AppColors.primary,
-                    ),
-                  );
-                },
-              ),
-            ),
-            const SizedBox(width: AppDimensions.spacingMd),
-            Expanded(
-              child: AnimatedBuilder(
-                animation: _cardAnimations[1],
-                builder: (context, child) {
-                  return Transform.scale(
-                    scale: _cardAnimations[1].value,
-                    child: _buildStatCard(
-                      'Attendees',
-                      '1,234',
-                      Icons.people,
-                      AppColors.secondary,
-                    ),
-                  );
-                },
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: AppDimensions.spacingMd),
-        Row(
-          children: [
-            Expanded(
-              child: AnimatedBuilder(
-                animation: _cardAnimations[2],
-                builder: (context, child) {
-                  return Transform.scale(
-                    scale: _cardAnimations[2].value,
-                    child: _buildStatCard(
-                      'This Month',
-                      '8',
-                      Icons.calendar_today,
-                      AppColors.success,
-                    ),
-                  );
-                },
-              ),
-            ),
-            const SizedBox(width: AppDimensions.spacingMd),
-            Expanded(
-              child: AnimatedBuilder(
-                animation: _cardAnimations[3],
-                builder: (context, child) {
-                  return Transform.scale(
-                    scale: _cardAnimations[3].value,
-                    child: _buildStatCard(
-                      'Revenue',
-                      '\$12.5K',
-                      Icons.attach_money,
-                      AppColors.error,
-                    ),
-                  );
-                },
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
+  // ADD THE MISSING _buildStatCard METHOD
   Widget _buildStatCard(
     String title,
     String value,
@@ -274,19 +200,18 @@ class _DashboardScreenState extends State<DashboardScreen>
             padding: const EdgeInsets.all(AppDimensions.paddingSm),
             decoration: BoxDecoration(
               color: color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
+              borderRadius: BorderRadius.circular(AppDimensions.radiusRound),
             ),
-            child: Icon(icon, color: color, size: AppDimensions.iconMd),
+            child: Icon(icon, color: color, size: AppDimensions.iconSm),
           ),
-          const SizedBox(height: AppDimensions.spacingMd),
+          const SizedBox(height: AppDimensions.spacingSm),
           Text(
             value,
-            style: AppTextStyles.headlineMedium.copyWith(
+            style: AppTextStyles.headlineSmall.copyWith(
               fontWeight: FontWeight.bold,
               color: AppColors.textPrimary,
             ),
           ),
-          const SizedBox(height: AppDimensions.spacingXs),
           Text(
             title,
             style: AppTextStyles.bodySmall.copyWith(
@@ -294,6 +219,289 @@ class _DashboardScreenState extends State<DashboardScreen>
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildQuickStats() {
+    return Consumer<EventsProvider>(
+      builder: (context, eventsProvider, _) {
+        final events = eventsProvider.events;
+        final now = DateTime.now();
+        final upcomingEvents = events.where((event) =>
+          event.endDate.isAfter(now)
+        ).length;
+
+        // Calculate total attendees by summing the length of attendees list for each event
+        final totalAttendees = events.fold<int>(0, (sum, event) => sum + event.attendees.length);
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Quick Stats',
+              style: AppTextStyles.titleLarge.copyWith(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: AppDimensions.spacingMd),
+            Row(
+              children: [
+                Expanded(
+                  child: AnimatedBuilder(
+                    animation: _cardAnimations[0],
+                    builder: (context, child) {
+                      return Transform.scale(
+                        scale: _cardAnimations[0].value,
+                        child: _buildStatCard(
+                          'Total Events',
+                          '${events.length}',
+                          Icons.event,
+                          AppColors.primary,
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(width: AppDimensions.spacingMd),
+                Expanded(
+                  child: AnimatedBuilder(
+                    animation: _cardAnimations[1],
+                    builder: (context, child) {
+                      return Transform.scale(
+                        scale: _cardAnimations[1].value,
+                        child: _buildStatCard(
+                          'Total Attendees',
+                          totalAttendees.toString(),
+                          Icons.people,
+                          AppColors.secondary,
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppDimensions.spacingMd),
+            Row(
+              children: [
+                Expanded(
+                  child: AnimatedBuilder(
+                    animation: _cardAnimations[2],
+                    builder: (context, child) {
+                      return Transform.scale(
+                        scale: _cardAnimations[2].value,
+                        child: _buildStatCard(
+                          'Upcoming',
+                          '$upcomingEvents',
+                          Icons.calendar_today,
+                          AppColors.success,
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(width: AppDimensions.spacingMd),
+                const Spacer(),
+              ],
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildEventCard({
+    required String title,
+    required String date,
+    required String location,
+    required int attendees,
+    required int? price,
+    required String? imageUrl,
+    required bool isUpcoming,
+  }) {
+    return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16.0),
+      ),
+      child: InkWell(
+        onTap: () {
+          // Navigate to event details when tapped
+          // Navigator.pushNamed(context, '/event-details', arguments: eventId);
+        },
+        borderRadius: BorderRadius.circular(16.0),
+        child: Container(
+          width: 300,
+          margin: const EdgeInsets.all(1),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Event Image
+              Stack(
+                children: [
+                  ClipRRect(
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(16.0)),
+                    child: Container(
+                      height: 140,
+                      width: double.infinity,
+                      color: AppColors.primary.withOpacity(0.1),
+                      child: imageUrl != null && imageUrl.isNotEmpty
+                          ? Image.network(
+                              imageUrl,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) => _buildDefaultEventImage(),
+                            )
+                          : _buildDefaultEventImage(),
+                    ),
+                  ),
+                  if (isUpcoming)
+                    Positioned(
+                      top: 8,
+                      right: 8,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: AppColors.success.withOpacity(0.9),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          'Upcoming',
+                          style: AppTextStyles.bodySmall.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+
+              // Event Details
+              Padding(
+                padding: const EdgeInsets.all(12.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Event Title
+                    Text(
+                      title,
+                      style: AppTextStyles.titleMedium.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textPrimary,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+
+                    const SizedBox(height: 8),
+
+                    // Date and Time
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.calendar_today,
+                          size: 16,
+                          color: AppColors.textSecondary,
+                        ),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            date,
+                            style: AppTextStyles.bodySmall.copyWith(
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 6),
+
+                    // Location
+                    if (location.isNotEmpty) ...[
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.location_on,
+                            size: 16,
+                            color: AppColors.textSecondary,
+                          ),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              location,
+                              style: AppTextStyles.bodySmall.copyWith(
+                                color: AppColors.textSecondary,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                    ],
+
+                    // Attendees and Price
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        // Attendees
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.people,
+                              size: 16,
+                              color: AppColors.textSecondary,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              '$attendees ${attendees == 1 ? 'attendee' : 'attendees'}' ,
+                              style: AppTextStyles.bodySmall.copyWith(
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
+
+                        // Price
+                        if (price != null && price > 0)
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              'KSH ${price.toStringAsFixed(2)}',
+                              style: AppTextStyles.bodySmall.copyWith(
+                                color: AppColors.primary,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          )
+                        else
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: Colors.green.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              'Free',
+                              style: AppTextStyles.bodySmall.copyWith(
+                                color: Colors.green,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -312,7 +520,10 @@ class _DashboardScreenState extends State<DashboardScreen>
               ),
             ),
             TextButton(
-              onPressed: () {},
+              onPressed: () {
+                // Navigate to all events
+                _pageController.jumpToPage(1);
+              },
               child: Text(
                 'View All',
                 style: AppTextStyles.bodyMedium.copyWith(
@@ -324,122 +535,90 @@ class _DashboardScreenState extends State<DashboardScreen>
           ],
         ),
         const SizedBox(height: AppDimensions.spacingMd),
-        SizedBox(
-          height: 200,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            itemCount: 5,
-            itemBuilder: (context, index) {
-              return Container(
-                width: 280,
-                margin: const EdgeInsets.only(right: AppDimensions.marginMd),
-                child: _buildEventCard(
-                  'Tech Conference 2025',
-                  'March 15, 2025',
-                  '500 attendees',
-                  'assets/images/event_placeholder.jpg',
+        Consumer<EventsProvider>(
+          builder: (context, eventsProvider, _) {
+            if (eventsProvider.isLoading && eventsProvider.events.isEmpty) {
+              return const Center(child: CircularProgressIndicator());
+            }
+
+            if (eventsProvider.error != null) {
+              return Center(
+                child: Text(
+                  'Error loading events: ${eventsProvider.error}',
+                  style: AppTextStyles.bodyMedium.copyWith(color: AppColors.error),
                 ),
               );
-            },
-          ),
+            }
+
+            if (eventsProvider.events.isEmpty) {
+              return Center(
+                child: Text(
+                  'No events found. Create your first event!',
+                  style: AppTextStyles.bodyMedium,
+                ),
+              );
+            }
+
+            // Sort events by date (newest first)
+            final sortedEvents = List<EventModel>.from(eventsProvider.events)
+              ..sort((a, b) => b.startDate.compareTo(a.startDate));
+
+            // Take up to 5 most recent events
+            final recentEvents = sortedEvents.take(5).toList();
+
+            return SizedBox(
+              height: 320, // Increased height for better card visibility
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                itemCount: recentEvents.length,
+                itemBuilder: (context, index) {
+                  final event = recentEvents[index];
+                  final isUpcoming = event.startDate.isAfter(DateTime.now());
+                  final dateFormat = DateFormat('MMM d, y • h:mm a');
+                  final dateString = dateFormat.format(event.startDate);
+
+                  // FIXED: Handle the venueName property issue
+                  String location = 'Location not specified';
+                  if (event.location != null) {
+                    // Check if the location has the required properties
+                    // If venueName doesn't exist, try alternative properties or use a fallback
+                    final loc = event.location!;
+                    if (loc.city != null) {
+                      // Try to build location string with available properties
+                      location = loc.city!;
+                      // Add venue name if it exists (you may need to check your EventLocation model)
+                      // This assumes you might have a 'name' or 'venue' property instead of 'venueName'
+                      // location = '${loc.name ?? 'Venue'}, ${loc.city}';
+                    }
+                  }
+
+                  return _buildEventCard(
+                    title: event.title,
+                    date: dateString,
+                    location: location,
+                    attendees: event.attendees?.length ?? 0,
+                    price: event.ticketPrice?.toInt(),
+                    imageUrl: event.coverImage,
+                    isUpcoming: isUpcoming,
+                  );
+                },
+              ),
+            );
+          },
         ),
       ],
     );
   }
 
-  Widget _buildEventCard(
-    String title,
-    String date,
-    String attendees,
-    String image,
-  ) {
+  Widget _buildDefaultEventImage() {
     return Container(
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppDimensions.radiusLg),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.textPrimary.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            height: 100,
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [AppColors.primary, AppColors.secondary],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(AppDimensions.radiusLg),
-                topRight: Radius.circular(AppDimensions.radiusLg),
-              ),
-            ),
-            child: const Center(
-              child: Icon(
-                Icons.event,
-                size: AppDimensions.iconLg,
-                color: Colors.white,
-              ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(AppDimensions.paddingMd),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: AppTextStyles.titleMedium.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: AppDimensions.spacingSm),
-                Row(
-                  children: [
-                    Icon(
-                      Icons.calendar_today,
-                      size: AppDimensions.iconSm,
-                      color: AppColors.textSecondary,
-                    ),
-                    const SizedBox(width: AppDimensions.spacingXs),
-                    Text(
-                      date,
-                      style: AppTextStyles.bodySmall.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: AppDimensions.spacingXs),
-                Row(
-                  children: [
-                    Icon(
-                      Icons.people,
-                      size: AppDimensions.iconSm,
-                      color: AppColors.textSecondary,
-                    ),
-                    const SizedBox(width: AppDimensions.spacingXs),
-                    Text(
-                      attendees,
-                      style: AppTextStyles.bodySmall.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
+      color: AppColors.primary.withOpacity(0.1),
+      child: const Center(
+        child: Icon(
+          Icons.event,
+          size: 50,
+          color: AppColors.primary,
+        ),
       ),
     );
   }

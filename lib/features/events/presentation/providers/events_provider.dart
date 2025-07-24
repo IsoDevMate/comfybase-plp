@@ -128,6 +128,20 @@ class EventsProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  // Get events organized by the current user
+  Future<void> getOrganizerEvents() async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+    try {
+      _events = await _eventService.getOrganizerEvents();
+    } catch (e) {
+      _error = e.toString();
+    }
+    _isLoading = false;
+    notifyListeners();
+  }
+
   // Register for free event
   Future<bool> registerForFreeEvent(String eventId) async {
     _isRegistering = true;
