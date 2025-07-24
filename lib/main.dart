@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:kenyanvalley/core/network/api_client.dart';
 import 'package:provider/provider.dart';
+import 'package:kenyanvalley/core/network/api_client.dart';
 import 'features/auth/presentation/providers/auth_provider.dart';
 import 'core/services/auth_service.dart';
 import 'features/auth/presentation/screens/login_screen.dart';
@@ -15,6 +15,9 @@ import 'package:kenyanvalley/features/events/presentation/screens/create_event_s
 import 'features/auth/presentation/screens/edit_profile_screen.dart';
 import 'core/services/storage_service_factory.dart';
 import 'core/services/hive_storage_service.dart';
+import 'core/di/dependency_injection.dart';
+import 'features/notes/presentation/screens/notes_list_screen.dart';
+import 'package:kenyanvalley/features/notes/presentation/providers/notes_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -22,9 +25,11 @@ void main() async {
   // Initialize Hive storage
   await HiveStorageService.init();
 
-  // Initialize network clients
-  DioClient().init();
-  ApiClient().init();
+  // Initialize dependencies
+  await initDependencies();
+  
+  final dependencies = await initDependencies();
+  
   runApp(
     MultiProvider(
       providers: [
@@ -52,6 +57,12 @@ class MainApp extends StatelessWidget {
         '/settings': (context) => const SettingsPage(),
         '/events': (context) => const EventsListPage(),
         '/events/create': (context) => const CreateEventPage(),
+        '/notes': (context) => ChangeNotifierProvider(
+              create: (context) => NotesProvider(
+                Provider.of<Dependencies>(context, listen: false).notesRepository,
+              ),
+              child: const NotesListScreen(),
+            ),
         '/login': (context) => const LoginScreen(),
         '/register': (context) => const RegisterScreen(),
       },
