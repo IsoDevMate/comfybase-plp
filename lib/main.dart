@@ -10,11 +10,12 @@ import 'features/auth/presentation/screens/dashboard_screen.dart';
 import 'features/events/presentation/providers/events_provider.dart';
 import 'core/network/dio_client.dart';
 import 'features/auth/presentation/screens/settings_screen.dart';
-import 'features/events/presentation/screens/events_list_screen.dart';
+import 'package:kenyanvalley/features/events/presentation/screens/events_list_screen.dart';
+import 'package:kenyanvalley/features/events/presentation/screens/create_event_screen.dart';
 import 'features/auth/presentation/screens/edit_profile_screen.dart';
 
 void main() async {
- WidgetsFlutterBinding.ensureInitialized();
+  WidgetsFlutterBinding.ensureInitialized();
 
   // Initialize network clients
   DioClient().init();
@@ -45,6 +46,7 @@ class MainApp extends StatelessWidget {
         '/edit-profile': (context) => const EditProfileScreen(),
         '/settings': (context) => const SettingsPage(),
         '/events': (context) => const EventsListPage(),
+        '/events/create': (context) => const CreateEventPage(),
         '/login': (context) => const LoginScreen(),
         '/register': (context) => const RegisterScreen(),
       },

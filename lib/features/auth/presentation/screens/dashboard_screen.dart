@@ -466,7 +466,7 @@ class _DashboardScreenState extends State<DashboardScreen>
               Icons.add_circle_outline,
               AppColors.primary,
               () {
-                Navigator.pushNamed(context, '/create-event');
+                Navigator.pushNamed(context, '/events/create');
               },
             ),
             _buildActionCard(
