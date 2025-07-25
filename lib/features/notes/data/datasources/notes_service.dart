@@ -63,17 +63,29 @@ class NotesRemoteDataSourceImpl implements NotesRemoteDataSource {
       );
 
       if (response.statusCode == 200) {
-        final responseData = response.data['data'];
-        if (responseData is Map && responseData.containsKey('notes')) {
-          final List<dynamic> notesJson = responseData['notes'] as List;
-          return notesJson.map((json) => Note.fromJson(json)).toList();
-        } else {
-          // Handle case where response format is unexpected
-          throw ServerException(
-            message: 'Invalid response format',
-            statusCode: response.statusCode,
-          );
+        // Handle different possible response formats
+        if (response.data is List) {
+          // Case 1: Response is a direct list of notes
+          return (response.data as List).map((json) => Note.fromJson(json)).toList();
+        } else if (response.data is Map) {
+          final responseData = response.data as Map<String, dynamic>;
+          
+          // Case 2: Response has a 'data' field containing the notes
+          if (responseData.containsKey('data') && responseData['data'] is List) {
+            return (responseData['data'] as List).map((json) => Note.fromJson(json)).toList();
+          }
+          
+          // Case 3: Response has a 'notes' field containing the notes
+          if (responseData.containsKey('notes') && responseData['notes'] is List) {
+            return (responseData['notes'] as List).map((json) => Note.fromJson(json)).toList();
+          }
         }
+        
+        // If we get here, the response format is unexpected
+        throw ServerException(
+          message: 'Invalid response format',
+          statusCode: response.statusCode,
+        );
       } else {
         throw ServerException(
           message: 'Failed to load notes',

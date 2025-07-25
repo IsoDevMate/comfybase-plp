@@ -1,89 +1,3 @@
-// // features/events/presentation/pages/create_event_page.dart
-// import 'package:flutter/material.dart';
-// import 'package:provider/provider.dart';
-// import '../providers/events_provider.dart';
-// import '../../data/models/event_model.dart';
-// import '../widgets/event_form.dart';
-// import '../widgets/event_card.dart';
-
-// class CreateEventPage extends StatefulWidget {
-//   final EventModel? initialEvent; // Pass this for editing
-
-//   const CreateEventPage({Key? key, this.initialEvent}) : super(key: key);
-
-//   @override
-//   State<CreateEventPage> createState() => _CreateEventPageState();
-// }
-
-// class _CreateEventPageState extends State<CreateEventPage> {
-//   EventModel? _previewEvent;
-//   bool _isSubmitting = false;
-
-//   @override
-//   void initState() {
-//     super.initState();
-//     _previewEvent = widget.initialEvent;
-//   }
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return Scaffold(
-//       appBar: AppBar(
-//         title: Text(
-//           widget.initialEvent == null ? 'Create Event' : 'Edit Event',
-//         ),
-//       ),
-//       body: Consumer<EventsProvider>(
-//         builder: (context, eventsProvider, child) {
-//           return SingleChildScrollView(
-//             padding: const EdgeInsets.all(16.0),
-//             child: Column(
-//               crossAxisAlignment: CrossAxisAlignment.start,
-//               children: [
-//                 EventForm(
-//                   initialEvent: widget.initialEvent,
-//                   onSubmit: (event) async {
-//                     setState(() => _isSubmitting = true);
-//                     final success = widget.initialEvent == null
-//                         ? await eventsProvider.createEvent(event)
-//                         : await eventsProvider.updateEvent(event.id, event);
-//                     setState(() => _isSubmitting = false);
-//                     if (success) {
-//                       Navigator.pop(context, true);
-//                     } else {
-//                       ScaffoldMessenger.of(context).showSnackBar(
-//                         SnackBar(
-//                           content: Text(eventsProvider.error ?? 'Error'),
-//                         ),
-//                       );
-//                     }
-//                   },
-//                   onChanged: (event) {
-//                     setState(() => _previewEvent = event);
-//                   },
-//                 ),
-//                 const SizedBox(height: 32),
-//                 Text(
-//                   'Live Preview:',
-//                   style: Theme.of(context).textTheme.titleMedium,
-//                 ),
-//                 const SizedBox(height: 8),
-//                 if (_previewEvent != null) EventCard(event: _previewEvent!),
-//                 if (_isSubmitting)
-//                   const Padding(
-//                     padding: EdgeInsets.only(top: 24.0),
-//                     child: Center(child: CircularProgressIndicator()),
-//                   ),
-//               ],
-//             ),
-//           );
-//         },
-//       ),
-//     );
-//   }
-// }
-
-
 // features/events/presentation/pages/create_event_page.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -95,6 +9,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/theme/app_dimensions.dart';
 import 'dart:math' as math;
+import 'package:intl/intl.dart';
 
 class CreateEventPage extends StatefulWidget {
   final EventModel? initialEvent;
@@ -107,6 +22,8 @@ class CreateEventPage extends StatefulWidget {
 
 class _CreateEventPageState extends State<CreateEventPage>
     with TickerProviderStateMixin {
+  DateTime? _startDate;
+  DateTime? _endDate;
   EventModel? _previewEvent;
   bool _isSubmitting = false;
   int _currentStep = 0;
@@ -946,7 +863,94 @@ class _CreateEventPageState extends State<CreateEventPage>
     );
   }
 
+  Future<void> _selectDateTime(BuildContext context, bool isStartDate) async {
+    final DateTime now = DateTime.now();
+    final DateTime? pickedDate = await showDatePicker(
+      context: context,
+      initialDate: isStartDate 
+          ? _startDate ?? now
+          : _endDate ?? (_startDate ?? now).add(const Duration(hours: 1)),
+      firstDate: isStartDate ? now : _startDate ?? now,
+      lastDate: DateTime(now.year + 2),
+      builder: (BuildContext context, Widget? child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: ColorScheme.light(
+              primary: AppColors.primary,
+              onPrimary: Colors.white,
+              surface: Colors.white,
+              onSurface: Colors.black,
+            ),
+            dialogBackgroundColor: Colors.white,
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (pickedDate != null) {
+      final TimeOfDay? pickedTime = await showTimePicker(
+        context: context,
+        initialTime: isStartDate
+            ? TimeOfDay.fromDateTime(_startDate ?? now)
+            : TimeOfDay.fromDateTime(_endDate ?? now.add(const Duration(hours: 1))),
+        builder: (BuildContext context, Widget? child) {
+          return Theme(
+            data: Theme.of(context).copyWith(
+              colorScheme: ColorScheme.light(
+                primary: AppColors.primary,
+                onPrimary: Colors.white,
+                surface: Colors.white,
+                onSurface: Colors.black,
+              ),
+              dialogBackgroundColor: Colors.white,
+            ),
+            child: MediaQuery(
+              data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
+              child: child!,
+            ),
+          );
+        },
+      );
+
+      if (pickedTime != null) {
+        final DateTime selectedDateTime = DateTime(
+          pickedDate.year,
+          pickedDate.month,
+          pickedDate.day,
+          pickedTime.hour,
+          pickedTime.minute,
+        );
+
+        setState(() {
+          if (isStartDate) {
+            _startDate = selectedDateTime;
+            // If end date is before start date, update it to be 1 hour after start
+            if (_endDate == null || _endDate!.isBefore(selectedDateTime)) {
+              _endDate = selectedDateTime.add(const Duration(hours: 1));
+            }
+          } else {
+            // Ensure end date is after start date
+            if (selectedDateTime.isAfter(_startDate ?? now)) {
+              _endDate = selectedDateTime;
+            } else {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('End date must be after start date'),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            }
+          }
+        });
+      }
+    }
+  }
+
   Widget _buildDateTimePicker({required String label, required IconData icon}) {
+    final bool isStartDate = label.toLowerCase().contains('start');
+    final selectedDate = isStartDate ? _startDate : _endDate;
+    
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(AppDimensions.radiusLg),
@@ -959,9 +963,7 @@ class _CreateEventPageState extends State<CreateEventPage>
         ],
       ),
       child: InkWell(
-        onTap: () {
-          // Show date time picker
-        },
+        onTap: () => _selectDateTime(context, isStartDate),
         borderRadius: BorderRadius.circular(AppDimensions.radiusLg),
         child: Container(
           padding: const EdgeInsets.all(16),
@@ -996,8 +998,12 @@ class _CreateEventPageState extends State<CreateEventPage>
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      'Select date & time',
-                      style: AppTextStyles.bodyMedium,
+                      selectedDate != null
+                          ? '${DateFormat('MMM d, y').format(selectedDate)} • ${DateFormat('h:mm a').format(selectedDate)}'
+                          : 'Select date & time',
+                      style: AppTextStyles.bodyMedium.copyWith(
+                        fontWeight: selectedDate != null ? FontWeight.w500 : null,
+                      ),
                     ),
                   ],
                 ),

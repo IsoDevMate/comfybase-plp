@@ -86,34 +86,47 @@ class NotesProvider with ChangeNotifier {
     );
     notifyListeners();
 
-    final result = await _repository.getNotes(
-      page: page,
-      limit: _pageSize,
-    );
+    try {
+      final result = await _repository.getNotes(
+        page: page,
+        limit: _pageSize,
+      );
 
-    result.fold(
-      (failure) {
-        _state = _state.copyWith(
-          isLoading: false,
-          error: failure,
-          hasReachedMax: true,
-        );
-        notifyListeners();
-      },
-      (notes) {
-        final allNotes = refresh ? notes : [..._state.notes, ...notes];
-        _state = _state.copyWith(
-          isLoading: false,
-          notes: allNotes,
-          page: page + 1,
-          hasReachedMax: notes.length < _pageSize,
-        );
-        notifyListeners();
-      },
-    );
+      result.fold(
+        (failure) {
+          _state = _state.copyWith(
+            isLoading: false,
+            error: failure,
+            hasReachedMax: true,
+          );
+          notifyListeners();
+        },
+        (notes) {
+          final allNotes = refresh ? notes : [..._state.notes, ...notes];
+          _state = _state.copyWith(
+            isLoading: false,
+            notes: allNotes,
+            page: page + 1,
+            hasReachedMax: notes.length < _pageSize,
+          );
+          notifyListeners();
+        },
+      );
+    } catch (e) {
+      _state = _state.copyWith(
+        isLoading: false,
+        error: ServerFailure(message: 'An unexpected error occurred'),
+        hasReachedMax: true,
+      );
+      notifyListeners();
+    }
   }
 
-  Future<void> refreshNotes() => getNotes(refresh: true);
+  Future<void> refreshNotes() async {
+    _state = const NotesState(); // Reset state
+    notifyListeners();
+    await getNotes(refresh: true);
+  }
 
   Future<void> createNote({
     required String title,
@@ -122,6 +135,9 @@ class NotesProvider with ChangeNotifier {
     List<String>? tags,
     bool isPrivate = true,
   }) async {
+    _state = _state.copyWith(isLoading: true);
+    notifyListeners();
+
     final result = await _repository.createNote(
       title: title,
       content: content,

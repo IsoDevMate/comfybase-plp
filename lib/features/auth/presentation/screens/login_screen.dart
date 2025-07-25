@@ -5,8 +5,8 @@ import '../providers/auth_provider.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/theme/app_animations.dart';
-import '../widgets/debugStorage.dart';
 import 'package:flutter/foundation.dart';
+import 'forgot_password_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({Key? key}) : super(key: key);
@@ -100,7 +100,6 @@ class _LoginScreenState extends State<LoginScreen>
 
                 // Footer Section
                 FadeTransition(opacity: _fadeAnimation, child: _buildFooter()),
-                if (kDebugMode) StorageDebugWidget(),
               ],
             ),
           ),
@@ -281,7 +280,12 @@ class _LoginScreenState extends State<LoginScreen>
         const Spacer(),
         TextButton(
           onPressed: () {
-            // Handle forgot password
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const ForgotPasswordScreen(),
+              ),
+            );
           },
           child: Text(
             'Forgot Password?',
