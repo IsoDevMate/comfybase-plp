@@ -4,17 +4,15 @@ A modern event management platform for seamless attendee engagement and interact
 
 ## 🌟 Features
 - **Real-time Event Interactions**
-  - Live streaming capabilities for premium users
-  - Interactive note-taking with multimedia support
-  - QR code-based identity verification
+  - Interactive note-taking 
+
 - **Cross-Platform Accessibility**
-  - Seamless media uploads
-  - Content sharing across platforms
+
   - Responsive design for all devices (Android, iOS, Web, Desktop)
 - **Enhanced Attendee Experience**
   - Interactive session tracking
   - Multimedia-enhanced note-taking
-  - Real-time notifications
+
 
 ## 🚀 Installation
 
