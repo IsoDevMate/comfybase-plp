@@ -27,6 +27,8 @@ MediaAttachment _$MediaAttachmentFromJson(Map<String, dynamic> json) =>
       url: json['url'] as String,
       caption: json['caption'] as String,
       createdAt: DateTime.parse(json['createdAt'] as String),
+      filename: json['filename'] as String?,
+      size: (json['size'] as num?)?.toInt(),
     );
 
 Map<String, dynamic> _$MediaAttachmentToJson(MediaAttachment instance) =>
@@ -36,6 +38,8 @@ Map<String, dynamic> _$MediaAttachmentToJson(MediaAttachment instance) =>
       'url': instance.url,
       'caption': instance.caption,
       'createdAt': instance.createdAt.toIso8601String(),
+      'filename': instance.filename,
+      'size': instance.size,
     };
 
 Note _$NoteFromJson(Map<String, dynamic> json) => Note(

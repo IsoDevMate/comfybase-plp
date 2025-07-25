@@ -65,11 +65,14 @@ class NoteState {
 class NotesProvider with ChangeNotifier {
   final NotesRepository _repository;
   static const int _pageSize = 10;
-  
+
   NotesState _state = const NotesState();
   NotesState get state => _state;
-  
-  // Expose hasReachedMax for convenience
+
+  // Add convenience getters for state properties
+  bool get isLoading => _state.isLoading;
+  List<Note> get notes => _state.notes;
+  Failure? get error => _state.error;
   bool get hasReachedMax => _state.hasReachedMax;
 
   NotesProvider(this._repository);
@@ -78,7 +81,7 @@ class NotesProvider with ChangeNotifier {
     if (_state.isLoading) return;
 
     final page = refresh ? 1 : _state.page;
-    
+
     _state = _state.copyWith(
       isLoading: true,
       error: null,
@@ -184,7 +187,7 @@ class NotesProvider with ChangeNotifier {
         final updatedNotes = _state.notes.map((note) {
           return note.id == updatedNote.id ? updatedNote : note;
         }).toList();
-        
+
         _state = _state.copyWith(notes: updatedNotes);
         notifyListeners();
       },
@@ -195,10 +198,10 @@ class NotesProvider with ChangeNotifier {
     // Optimistically remove the note
     final notes = [..._state.notes];
     notes.removeWhere((note) => note.id == id);
-    
+
     _state = _state.copyWith(notes: notes);
     notifyListeners();
-    
+
     // TODO: Implement actual deletion from the server
     // final result = await _repository.deleteNote(id);
     // result.fold(
@@ -216,7 +219,7 @@ class NotesProvider with ChangeNotifier {
 
   Future<void> shareNote(String id, String userId) async {
     final result = await _repository.shareNote(id, userId);
-    
+
     result.fold(
       (failure) {
         _state = _state.copyWith(error: failure);
@@ -226,7 +229,7 @@ class NotesProvider with ChangeNotifier {
         final updatedNotes = _state.notes.map((note) {
           return note.id == updatedNote.id ? updatedNote : note;
         }).toList();
-        
+
         _state = _state.copyWith(notes: updatedNotes);
         notifyListeners();
       },
@@ -235,7 +238,7 @@ class NotesProvider with ChangeNotifier {
 
   Future<void> unshareNote(String id, String userId) async {
     final result = await _repository.unshareNote(id, userId);
-    
+
     result.fold(
       (failure) {
         _state = _state.copyWith(error: failure);
@@ -245,7 +248,7 @@ class NotesProvider with ChangeNotifier {
         final updatedNotes = _state.notes.map((note) {
           return note.id == updatedNote.id ? updatedNote : note;
         }).toList();
-        
+
         _state = _state.copyWith(notes: updatedNotes);
         notifyListeners();
       },
@@ -262,7 +265,7 @@ class NotesProvider with ChangeNotifier {
       filePath: filePath,
       caption: caption,
     );
-    
+
     result.fold(
       (failure) {
         _state = _state.copyWith(error: failure);
@@ -272,7 +275,7 @@ class NotesProvider with ChangeNotifier {
         final updatedNotes = _state.notes.map((note) {
           return note.id == updatedNote.id ? updatedNote : note;
         }).toList();
-        
+
         _state = _state.copyWith(notes: updatedNotes);
         notifyListeners();
       },
@@ -287,7 +290,7 @@ class NotesProvider with ChangeNotifier {
       noteId: noteId,
       attachmentId: attachmentId,
     );
-    
+
     result.fold(
       (failure) {
         _state = _state.copyWith(error: failure);
@@ -299,4 +302,40 @@ class NotesProvider with ChangeNotifier {
       },
     );
   }
+
+  // // Get a single note by ID
+  // Future<Note?> getNoteById(String id) async {
+  //   try {
+  //     final result = await _repository.getNoteById(id);
+  //     return result.fold(
+  //       (failure) {
+  //         _state = _state.copyWith(error: failure);
+  //         notifyListeners();
+  //         return null;
+  //       },
+  //       (note) => note,
+  //     );
+  //   } catch (e) {
+  //     _state = _state.copyWith(error: ServerFailure(message: e.toString()));
+  //     notifyListeners();
+  //     return null;
+  //   }
+  // }
+  Future<Note?> getNoteById(String id) async {
+  try {
+    final result = await _repository.getNoteById(id);
+    return result.fold(
+      (failure) {
+        _state = _state.copyWith(error: failure);
+        notifyListeners();
+        return null;
+      },
+      (note) => note,
+    );
+  } catch (e) {
+    _state = _state.copyWith(error: ServerFailure(message: e.toString()));
+    notifyListeners();
+    return null;
+  }
+}
 }
