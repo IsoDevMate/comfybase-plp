@@ -675,7 +675,6 @@ class NotesRemoteDataSourceImpl implements NotesRemoteDataSource {
     if (!await networkInfo.isConnected) {
       throw NetworkException();
     }
-
     try {
       final response = await dio.delete(
         '${ApiConstants.notes}/$noteId/media/$attachmentId',

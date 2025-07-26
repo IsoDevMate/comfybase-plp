@@ -244,6 +244,7 @@ import '../../../../core/theme/app_dimensions.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter/rendering.dart'; // For ScrollDirection
 import '../../../../core/theme/app_dimensions.dart';
+import '../../data/models/event_model.dart';
 
 class EventsListPage extends StatefulWidget {
   const EventsListPage({super.key});
@@ -394,7 +395,7 @@ class _EventsListPageState extends State<EventsListPage>
           );
         },
       ),
-      floatingActionButton: _buildAnimatedFAB(),
+      // Removed duplicate FAB since we have a plus button in the app bar
     );
   }
 
@@ -620,7 +621,22 @@ class _EventsListPageState extends State<EventsListPage>
     );
   }
 
+  // Filter events based on search query
+  List<EventModel> _filterEvents(List<EventModel> events, String query) {
+    if (query.isEmpty) return events;
+    
+    final queryLower = query.toLowerCase();
+    return events.where((event) {
+      return event.title.toLowerCase().contains(queryLower) ||
+             event.description.toLowerCase().contains(queryLower) ||
+             (event.location?.name?.toLowerCase().contains(queryLower) ?? false) ||
+             (event.location?.city?.toLowerCase().contains(queryLower) ?? false);
+    }).toList();
+  }
+
   Widget _buildEventsSliverList(EventsProvider eventsProvider) {
+    final filteredEvents = _filterEvents(eventsProvider.events, _searchQuery);
+    
     if (eventsProvider.isLoading && eventsProvider.events.isEmpty) {
       return SliverFillRemaining(
         child: _buildLoadingState(),
@@ -633,16 +649,16 @@ class _EventsListPageState extends State<EventsListPage>
       );
     }
 
-    if (eventsProvider.events.isEmpty) {
+    if (filteredEvents.isEmpty) {
       return SliverFillRemaining(
-        child: _buildEmptyState(),
+        child: _searchQuery.isNotEmpty ? _buildNoSearchResults() : _buildEmptyState(),
       );
     }
 
     return SliverList(
       delegate: SliverChildBuilderDelegate(
         (context, index) {
-          final event = eventsProvider.events[index];
+          final event = filteredEvents[index];
 
           return TweenAnimationBuilder<double>(
             duration: Duration(milliseconds: 300 + (index * 100)),
@@ -657,18 +673,10 @@ class _EventsListPageState extends State<EventsListPage>
                     child: EventCard(
                       event: event,
                       onTap: () {
-                        Navigator.pushNamed(
-                          context,
-                          '/events/details',
-                          arguments: event.id,
-                        );
+                        context.go('/events/details/${event.id}');
                       },
                       onEdit: () {
-                        Navigator.pushNamed(
-                          context,
-                          '/events/edit',
-                          arguments: event.id,
-                        );
+                        context.go('/events/edit/${event.id}');
                       },
                     ),
                   ),
@@ -763,6 +771,38 @@ class _EventsListPageState extends State<EventsListPage>
     );
   }
 
+  Widget _buildNoSearchResults() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(AppDimensions.paddingLg),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.search_off_rounded,
+              size: 64,
+              color: AppColors.textSecondary.withOpacity(0.5),
+            ),
+            const SizedBox(height: AppDimensions.spacingLg),
+            Text(
+              'No events found',
+              style: AppTextStyles.titleLarge,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: AppDimensions.spacingSm),
+            Text(
+              'Try different search terms or check back later for new events',
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: AppColors.textSecondary,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildEmptyState() {
     return Center(
       child: Padding(
@@ -804,7 +844,7 @@ class _EventsListPageState extends State<EventsListPage>
             const SizedBox(height: AppDimensions.spacingLg),
             ElevatedButton.icon(
               onPressed: () => context.go('/events/create'),
-              icon: const Icon(Icons.add),
+              icon: const Icon(Icons.add_circle_outline),
               label: const Text('Create Event'),
               style: ElevatedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(
