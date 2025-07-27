@@ -685,7 +685,7 @@ class _EventsListPageState extends State<EventsListPage>
             },
           );
         },
-        childCount: eventsProvider.events.length,
+        childCount: filteredEvents.length,
       ),
     );
   }

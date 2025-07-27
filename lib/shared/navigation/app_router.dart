@@ -24,6 +24,7 @@ final GoRouter appRouter = GoRouter(
           builder: (context, state) => EventCreateScreen(),
         ),
         GoRoute(path: 'my', builder: (context, state) => MyEventsScreen()),
+        GoRoute(path: 'reports', builder: (context, state) => const ReportsScreen()),
       ],
     ),
   ],

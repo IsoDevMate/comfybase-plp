@@ -2,11 +2,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/events_provider.dart';
-import '../widgets/payment_modal.dart';
+import 'package:kenyanvalley/features/payments/presentation/widgets/payment_modal.dart';
 import '../../domain/entities/event.dart';
-import '../../../../core/theme/app_colors.dart';
-import '../../../../core/theme/app_text_styles.dart';
-import '../../../../core/utils/date_formatter.dart';
+import 'package:kenyanvalley/core/theme/app_colors.dart';
+import 'package:kenyanvalley/core/theme/app_text_styles.dart';
+import 'package:kenyanvalley/features/auth/presentation/providers/auth_provider.dart';
 
 class EventDetailsPage extends StatefulWidget {
   final String eventId;
@@ -322,57 +322,67 @@ class _EventDetailsPageState extends State<EventDetailsPage> {
   }
 
   Widget _buildActionButtons(Event event, EventsProvider eventsProvider) {
-    return Column(
+    final isRegistered = eventsProvider.isUserRegisteredForEvent(event.id);
+    
+    return Row(
       children: [
-        if (!event.isUserRegistered) ...[
-          SizedBox(
-            width: double.infinity,
+        if (event.ticketPrice > 0) // Show Buy Ticket button for paid events
+          Expanded(
             child: ElevatedButton(
-              onPressed: eventsProvider.isRegistering
+              onPressed: isRegistered
                   ? null
                   : () => _handleRegistration(event, eventsProvider),
-              child: eventsProvider.isRegistering
-                  ? const Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        ),
-                        SizedBox(width: 8),
-                        Text('Processing...'),
-                      ],
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+              ),
+              child: Text(
+                isRegistered ? 'Registered' : 'Buy Ticket (KSh ${event.ticketPrice})',
+                style: const TextStyle(fontSize: 16),
+              ),
+            ),
+          ),
+        
+        if (event.ticketPrice > 0) const SizedBox(width: 12),
+        
+        // Register button for free events
+        if (event.ticketPrice == 0)
+          Expanded(
+            child: ElevatedButton(
+              onPressed: isRegistered || eventsProvider.isLoading
+                  ? null
+                  : () => _handleRegistration(event, eventsProvider),
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+              ),
+              child: eventsProvider.isLoading
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
                     )
                   : Text(
-                      event.ticketPrice > 0
-                          ? 'Pay KES ${event.ticketPrice.toStringAsFixed(2)}'
-                          : 'Register for Free',
+                      isRegistered ? 'Registered' : 'Register',
+                      style: const TextStyle(fontSize: 16),
                     ),
             ),
           ),
-        ] else ...[
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: null,
-              child: const Text('Already Registered'),
-            ),
+        
+        // Add to Calendar button
+        if (event.ticketPrice > 0) const SizedBox(width: 12),
+        IconButton(
+          onPressed: () => _addToCalendar(event),
+          style: IconButton.styleFrom(
+            backgroundColor: Colors.grey[200],
+            padding: const EdgeInsets.all(12),
           ),
-        ],
-        const SizedBox(height: 12),
-        SizedBox(
-          width: double.infinity,
-          child: OutlinedButton(
-            onPressed: () {
-              Navigator.pushNamed(
-                context,
-                '/events/sessions',
-                arguments: event.id,
-              );
-            },
-            child: const Text('View Sessions'),
-          ),
+          icon: const Icon(Icons.calendar_today, color: Colors.black87),
         ),
       ],
     );
@@ -454,20 +464,78 @@ class _EventDetailsPageState extends State<EventDetailsPage> {
     );
   }
 
-  void _handleRegistration(Event event, EventsProvider eventsProvider) {
+  Future<void> _handleRegistration(Event event, EventsProvider eventsProvider) async {
     if (event.ticketPrice > 0) {
-      showDialog(
-        context: context,
-        builder: (context) => PaymentModal(
-          event: event,
-          onPaymentSubmit: (phoneNumber) {
-            eventsProvider.registerForPaidEvent(event.id, phoneNumber);
-            Navigator.pop(context);
-          },
-        ),
-      );
+      final authProvider = context.read<AuthProvider>();
+      final userId = authProvider.user?.id;
+      
+      if (userId == null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Please log in to purchase tickets'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        return;
+      }
+
+      try {
+        // Show the payment modal
+        final result = await showDialog<bool>(
+          context: context,
+          builder: (context) => PaymentModal(
+            eventId: event.id,
+            amount: event.ticketPrice.toDouble(),
+            userId: userId,
+          ),
+        );
+
+        // If payment was initiated successfully, register for the event
+        if (result == true && mounted) {
+          await eventsProvider.registerForEvent(event.id);
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Successfully registered for the event!'),
+                backgroundColor: Colors.green,
+              ),
+            );
+          }
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error processing payment: ${e.toString()}'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
     } else {
-      eventsProvider.registerForFreeEvent(event.id);
+      // Handle free event registration
+      try {
+        await eventsProvider.registerForEvent(event.id);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Successfully registered for the free event!'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error registering for event: ${e.toString()}'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
     }
   }
 
@@ -500,6 +568,16 @@ class _EventDetailsPageState extends State<EventDetailsPage> {
     // Implement share functionality
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Share functionality not implemented yet')),
+    );
+  }
+
+  void _addToCalendar(Event event) {
+    // TODO: Implement add to calendar functionality
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Add to calendar functionality coming soon!'),
+        duration: Duration(seconds: 2),
+      ),
     );
   }
 }

@@ -304,12 +304,12 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            'Created: ${_formatDate(_note!.createdAt)}',
+                            'Created: ${_note?.createdAt != null ? _formatDate(_note!.createdAt!) : 'Unknown date'}',
                             style: Theme.of(context).textTheme.bodySmall,
                           ),
-                          if (_note!.updatedAt != _note!.createdAt)
+                          if (_note?.updatedAt != null && _note?.createdAt != _note?.updatedAt)
                             Text(
-                              'Updated: ${_formatDate(_note!.updatedAt)}',
+                              'Updated: ${_formatDate(_note!.updatedAt!)}',
                               style: Theme.of(context).textTheme.bodySmall,
                             ),
                           const Divider(height: 32),
@@ -317,11 +317,11 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
                             _note!.content,
                             style: Theme.of(context).textTheme.bodyLarge,
                           ),
-                          if (_note!.tags.isNotEmpty) ...[
+                          if (_note?.tags?.isNotEmpty ?? false) ...[
                             const SizedBox(height: 16),
                             Wrap(
                               spacing: 8,
-                              children: _note!.tags
+                              children: (_note?.tags ?? [])
                                   .map((tag) => Chip(
                                         label: Text(tag),
                                         backgroundColor:
@@ -370,10 +370,12 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
 
                                       if (confirmed == true) {
                                         try {
-                                          await _notesProvider.deleteAttachment(
-                                            noteId: _note!.id,
-                                            attachmentId: attachment.id,
-                                          );
+                                          if (_note?.id != null) {
+                                            await _notesProvider.deleteAttachment(
+                                              noteId: _note!.id!,
+                                              attachmentId: attachment.id,
+                                            );
+                                          }
                                           // Refresh the note after deletion
                                           _loadNote();
                                         } catch (e) {
@@ -407,7 +409,11 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
   }
 
   String _formatDate(DateTime date) {
-    return '${date.day}/${date.month}/${date.year} ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
+    try {
+      return '${date.day}/${date.month}/${date.year} ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
+    } catch (e) {
+      return 'Invalid date';
+    }
   }
 
   Future<void> _launchUrl(String url) async {

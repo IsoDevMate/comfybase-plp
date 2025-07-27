@@ -85,28 +85,30 @@ class _NoteEditorScreenState extends State<NoteEditorScreen> {
         );
       } else {
         // Update existing note
-        await notesProvider.updateNote(
-          id: widget.note!.id,
-          title: _titleController.text.trim(),
-          content: _contentController.text.trim(),
-          tags: _tags.toList(),
-          isPrivate: _isPrivate,
-        );
-        
-        // Handle removed attachments
-        for (final attachmentId in _removedAttachmentIds) {
-          await notesProvider.deleteAttachment(
-            noteId: widget.note!.id,
-            attachmentId: attachmentId,
+        if (widget.note?.id != null) {
+          await notesProvider.updateNote(
+            id: widget.note!.id!,
+            title: _titleController.text.trim(),
+            content: _contentController.text.trim(),
+            tags: _tags.toList(),
+            isPrivate: _isPrivate,
           );
-        }
-        
-        // Handle new attachments
-        for (final file in _newAttachments) {
-          await notesProvider.addMediaAttachment(
-            noteId: widget.note!.id,
-            filePath: file.path,
-          );
+          
+          // Handle removed attachments
+          for (final attachmentId in _removedAttachmentIds) {
+            await notesProvider.deleteAttachment(
+              noteId: widget.note!.id!,
+              attachmentId: attachmentId,
+            );
+          }
+          
+          // Handle new attachments
+          for (final file in _newAttachments) {
+            await notesProvider.addMediaAttachment(
+              noteId: widget.note!.id!,
+              filePath: file.path,
+            );
+          }
         }
       }
       

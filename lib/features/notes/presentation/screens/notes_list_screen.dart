@@ -434,7 +434,7 @@ class _NotesListScreenState extends State<NotesListScreen> {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => NoteDetailScreen(noteId: note.id),
+              builder: (context) => NoteDetailScreen(noteId: note.id ?? ''),
             ),
           ).then((_) {
             // Refresh notes after returning from detail screen
@@ -508,11 +508,11 @@ class _NotesListScreenState extends State<NotesListScreen> {
                 maxLines: 3,
                 overflow: TextOverflow.ellipsis,
               ),
-              if (note.tags.isNotEmpty) ...[
+              if (note.tags?.isNotEmpty ?? false) ...[
                 const SizedBox(height: 8),
                 Wrap(
                   spacing: 8,
-                  children: note.tags
+                  children: (note.tags ?? [])
                       .map((tag) => Chip(
                             label: Text(tag),
                             labelStyle: const TextStyle(fontSize: 12),
@@ -557,7 +557,9 @@ class _NotesListScreenState extends State<NotesListScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    '${note.createdAt.day}/${note.createdAt.month}/${note.createdAt.year}',
+                    note.createdAt != null 
+                      ? '${note.createdAt!.day}/${note.createdAt!.month}/${note.createdAt!.year}'
+                      : 'No date',
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
                   if (note.sharedWith.isNotEmpty)
@@ -589,7 +591,9 @@ class _NotesListScreenState extends State<NotesListScreen> {
             onPressed: () {
               Navigator.of(context).pop();
               final provider = Provider.of<NotesProvider>(context, listen: false);
-              provider.deleteNote(note.id);
+              if (note.id != null) {
+                provider.deleteNote(note.id!);
+              }
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('Note deleted')),
               );

@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 import 'core/theme/app_theme.dart';
 import 'features/auth/presentation/providers/auth_provider.dart';
 import 'features/events/presentation/providers/events_provider.dart';
+import 'features/payments/di/payment_injection.dart';
+import 'features/reports/di/reports_injection.dart';
 import 'shared/navigation/app_router.dart';
 
 class ComfyBaseApp extends StatelessWidget {
@@ -16,7 +18,8 @@ class ComfyBaseApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => EventsProvider()),
-        // Add other providers here
+        ...getPaymentProviders(),
+        ...getReportsProviders(),
       ],
       child: Consumer<AuthProvider>(
         builder: (context, authProvider, child) {

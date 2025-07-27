@@ -25,8 +25,10 @@ MediaAttachment _$MediaAttachmentFromJson(Map<String, dynamic> json) =>
       id: json['id'] as String,
       type: json['type'] as String,
       url: json['url'] as String,
-      caption: json['caption'] as String,
-      createdAt: DateTime.parse(json['createdAt'] as String),
+      caption: json['caption'] as String? ?? '',
+      createdAt: json['createdAt'] == null
+          ? null
+          : DateTime.parse(json['createdAt'] as String),
       filename: json['filename'] as String?,
       size: (json['size'] as num?)?.toInt(),
     );
@@ -37,31 +39,33 @@ Map<String, dynamic> _$MediaAttachmentToJson(MediaAttachment instance) =>
       'type': instance.type,
       'url': instance.url,
       'caption': instance.caption,
-      'createdAt': instance.createdAt.toIso8601String(),
+      'createdAt': instance.createdAt?.toIso8601String(),
       'filename': instance.filename,
       'size': instance.size,
     };
 
 Note _$NoteFromJson(Map<String, dynamic> json) => Note(
-      id: json['id'] as String,
+      id: json['id'] as String?,
       title: json['title'] as String,
       content: json['content'] as String,
       user: Note._userFromJson(json['user']),
       event: json['event'] as String?,
-      tags:
-          (json['tags'] as List<dynamic>?)?.map((e) => e as String).toList() ??
-              const [],
+      tags: (json['tags'] as List<dynamic>?)?.map((e) => e as String).toList(),
       isPrivate: json['isPrivate'] as bool? ?? true,
       sharedWith: (json['sharedWith'] as List<dynamic>?)
               ?.map((e) => e as String)
               .toList() ??
-          const [],
+          [],
       attachments: (json['mediaAttachments'] as List<dynamic>?)
               ?.map((e) => MediaAttachment.fromJson(e as Map<String, dynamic>))
               .toList() ??
-          const [],
-      createdAt: DateTime.parse(json['createdAt'] as String),
-      updatedAt: DateTime.parse(json['updatedAt'] as String),
+          [],
+      createdAt: json['createdAt'] == null
+          ? null
+          : DateTime.parse(json['createdAt'] as String),
+      updatedAt: json['updatedAt'] == null
+          ? null
+          : DateTime.parse(json['updatedAt'] as String),
       version: (json['__v'] as num?)?.toInt() ?? 0,
     );
 
@@ -69,13 +73,13 @@ Map<String, dynamic> _$NoteToJson(Note instance) => <String, dynamic>{
       'id': instance.id,
       'title': instance.title,
       'content': instance.content,
-      'user': Note._userToJson(instance.user),
+      if (Note._userToJson(instance.user) case final value?) 'user': value,
       'event': instance.event,
       'tags': instance.tags,
       'isPrivate': instance.isPrivate,
       'sharedWith': instance.sharedWith,
       'mediaAttachments': instance.attachments,
-      'createdAt': instance.createdAt.toIso8601String(),
-      'updatedAt': instance.updatedAt.toIso8601String(),
+      'createdAt': instance.createdAt?.toIso8601String(),
+      'updatedAt': instance.updatedAt?.toIso8601String(),
       '__v': instance.version,
     };
