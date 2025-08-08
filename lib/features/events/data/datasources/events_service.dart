@@ -32,7 +32,7 @@ class EventService {
   Future<EventModel> createEvent(EventModel event) async {
     final response = await _apiClient.post<Map<String, dynamic>>(
       ApiConstants.createEvent,
-      data: event.toJson(),
+      data: event.toCreateJson(),
       fromJson: (json) => json as Map<String, dynamic>,
     );
     return EventModel.fromJson(response.data!);

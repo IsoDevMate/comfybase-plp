@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:uni_links/uni_links.dart';
+import 'dart:async';
+import 'package:flutter/services.dart';
 import '../../../../core/theme/app_dimensions.dart';
 import '../providers/auth_provider.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -17,6 +21,7 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen>
     with SingleTickerProviderStateMixin {
+  StreamSubscription? _sub;
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -31,6 +36,7 @@ class _LoginScreenState extends State<LoginScreen>
   @override
   void initState() {
     super.initState();
+    _initDeepLinkListener();
     _animationController = AnimationController(
       duration: AppAnimations.medium,
       vsync: this,
@@ -59,7 +65,66 @@ class _LoginScreenState extends State<LoginScreen>
     _animationController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
+    _sub?.cancel();
     super.dispose();
+  }
+
+  void _initDeepLinkListener() async {
+    // Handle initial link if app was opened from a deep link
+    try {
+      final initialUri = await getInitialUri();
+      if (initialUri != null) {
+        _handleDeepLink(initialUri);
+      }
+    } catch (e) {
+      print('Error getting initial URI: $e');
+    }
+
+    // Listen for incoming links when the app is already running
+    try {
+      _sub = uriLinkStream.listen(
+        (Uri? uri) {
+          if (uri != null) {
+            _handleDeepLink(uri);
+          }
+        },
+        onError: (err) {
+          print('Deep link error: $err');
+        },
+      );
+    } catch (e) {
+      print('Deep link listener not supported on this platform: $e');
+    }
+  }
+
+  Future<void> _handleDeepLink(Uri uri) async {
+    print('Handling deep link: $uri');
+
+    // Check if this is a LinkedIn OAuth callback
+    if (uri.queryParameters.containsKey('accessToken') &&
+        uri.queryParameters.containsKey('refreshToken')) {
+      try {
+        final authProvider = Provider.of<AuthProvider>(context, listen: false);
+        await authProvider.handleLinkedInCallback(uri);
+
+        if (authProvider.isLoggedIn && mounted) {
+          // Clear any existing routes and navigate to dashboard
+          Navigator.of(
+            context,
+          ).pushNamedAndRemoveUntil('/dashboard', (route) => false);
+        }
+      } catch (e) {
+        print('Error handling LinkedIn callback: $e');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to sign in with LinkedIn: ${e.toString()}'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    }
   }
 
   @override
@@ -380,26 +445,50 @@ class _LoginScreenState extends State<LoginScreen>
   }
 
   Widget _buildSocialLoginButtons() {
-    return Row(
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+
+    return Column(
       children: [
-        Expanded(
-          child: _buildSocialButton(
-            icon: Icons.g_mobiledata,
-            label: 'Google',
-            onPressed: () {
-              // Handle Google login
-            },
-          ),
+        Row(
+          children: [
+            Expanded(
+              child: _buildSocialButton(
+                icon: Icons.g_mobiledata,
+                label: 'Google',
+                onPressed: () {
+                  // Handle Google login
+                },
+              ),
+            ),
+            const SizedBox(width: AppDimensions.spacingMd),
+            Expanded(
+              child: _buildSocialButton(
+                icon: Icons.apple,
+                label: 'Apple',
+                onPressed: () {
+                  // Handle Apple login
+                },
+              ),
+            ),
+          ],
         ),
-        const SizedBox(width: AppDimensions.spacingMd),
-        Expanded(
-          child: _buildSocialButton(
-            icon: Icons.apple,
-            label: 'Apple',
-            onPressed: () {
-              // Handle Apple login
-            },
-          ),
+        const SizedBox(height: AppDimensions.spacingMd),
+        _buildSocialButton(
+          icon: Icons.linked_camera,
+          label: 'Continue with LinkedIn',
+          onPressed: () async {
+            try {
+              await authProvider.loginWithLinkedIn();
+            } catch (e) {
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Failed to initiate LinkedIn login: $e'),
+                  ),
+                );
+              }
+            }
+          },
         ),
       ],
     );

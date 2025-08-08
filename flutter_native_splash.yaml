@@ -1,0 +1,16 @@
+flutter_native_splash:
+  # Background color of the splash screen
+  color: "#1A73E8"
+  
+  # Set to false to remove the splash screen on app load
+  android: true
+  ios: true
+  web: true
+  
+  # Android 12+ specific settings
+  android_12:
+    image: "assets/images/app_icon.png"
+    color: "#1A73E8"
+    
+  # iOS specific settings
+  ios_content_mode: scaleToFill

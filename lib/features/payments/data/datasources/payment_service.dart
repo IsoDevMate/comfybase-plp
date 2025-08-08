@@ -7,7 +7,8 @@ import 'package:kenyanvalley/core/network/api_client.dart';
 class PaymentService {
   final ApiClient _apiClient;
 
-  PaymentService({ApiClient? apiClient}) : _apiClient = apiClient ?? ApiClient();
+  PaymentService({ApiClient? apiClient})
+    : _apiClient = apiClient ?? ApiClient();
 
   Future<PaymentModel> initiateMpesaPayment({
     required String eventId,
@@ -18,15 +19,12 @@ class PaymentService {
     try {
       final response = await _apiClient.post(
         '${ApiConstants.mpesaInitiate}$eventId',
-        body: {
-          'userId': userId,
-          'phoneNumber': phoneNumber,
-          'amount': amount,
-        },
+        data: {'userId': userId, 'phoneNumber': phoneNumber, 'amount': amount},
+        fromJson: (json) => PaymentModel.fromJson(json),
       );
 
-      if (response.statusCode == 200) {
-        return PaymentModel.fromJson(response.data['data']);
+      if (response.success) {
+        return response.data!;
       } else {
         throw Exception('Failed to initiate M-Pesa payment');
       }
@@ -39,10 +37,11 @@ class PaymentService {
     try {
       final response = await _apiClient.get(
         '${ApiConstants.mpesaStatusQuery}/$paymentId',
+        fromJson: (json) => PaymentModel.fromJson(json),
       );
 
-      if (response.statusCode == 200) {
-        return PaymentModel.fromJson(response.data['data']);
+      if (response.success) {
+        return response.data!;
       } else {
         throw Exception('Failed to check payment status');
       }

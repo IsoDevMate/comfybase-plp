@@ -77,4 +77,22 @@ class EventModel {
   factory EventModel.fromJson(Map<String, dynamic> json) =>
       _$EventModelFromJson(json);
   Map<String, dynamic> toJson() => _$EventModelToJson(this);
+
+  // Method to create JSON for event creation (without id, createdAt, updatedAt)
+  Map<String, dynamic> toCreateJson() {
+    return {
+      'title': title,
+      'description': description,
+      'type': type,
+      'status': status,
+      'startDate': startDate.toIso8601String(),
+      'endDate': endDate.toIso8601String(),
+      'location': location.toJson(),
+      'capacity': capacity,
+      'ticketPrice': ticketPrice,
+      'coverImage': coverImage,
+      'sessions': sessions,
+      'attendees': attendees,
+    };
+  }
 }

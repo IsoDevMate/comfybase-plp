@@ -17,6 +17,45 @@ class AuthProvider extends ChangeNotifier {
 
   AuthProvider(this._authService);
 
+  // LinkedIn Login
+  Future<void> loginWithLinkedIn() async {
+    isLoading = true;
+    error = null;
+    notifyListeners();
+
+    try {
+      await _authService.initiateLinkedInLogin();
+      // The actual login completion will be handled by the deep link handler
+    } catch (e) {
+      error = 'Failed to initiate LinkedIn login: $e';
+      isLoading = false;
+      notifyListeners();
+      rethrow;
+    }
+  }
+
+  // Handle LinkedIn callback
+  Future<void> handleLinkedInCallback(Uri callbackUrl) async {
+    try {
+      final response = await _authService.handleLinkedInCallback(callbackUrl);
+      
+      if (response.success && response.data != null) {
+        user = response.data!.user as core_models.UserModel;
+        isLoggedIn = true;
+      } else {
+        error = response.message;
+        isLoggedIn = false;
+      }
+    } catch (e) {
+      error = 'Failed to complete LinkedIn login: $e';
+      isLoggedIn = false;
+      rethrow;
+    } finally {
+      isLoading = false;
+      notifyListeners();
+    }
+  }
+
   Future<void> login(String email, String password) async {
     isLoading = true;
     error = null;

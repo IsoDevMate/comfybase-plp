@@ -1,582 +1,337 @@
-// features/events/presentation/pages/event_details_page.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_text_styles.dart';
+import '../../data/models/event_model.dart';
 import '../providers/events_provider.dart';
-import 'package:kenyanvalley/features/payments/presentation/widgets/payment_modal.dart';
-import '../../domain/entities/event.dart';
-import 'package:kenyanvalley/core/theme/app_colors.dart';
-import 'package:kenyanvalley/core/theme/app_text_styles.dart';
-import 'package:kenyanvalley/features/auth/presentation/providers/auth_provider.dart';
+import 'package:intl/intl.dart';
 
-class EventDetailsPage extends StatefulWidget {
+class EventDetailsScreen extends StatefulWidget {
   final String eventId;
 
-  const EventDetailsPage({super.key, required this.eventId});
+  const EventDetailsScreen({Key? key, required this.eventId}) : super(key: key);
 
   @override
-  State<EventDetailsPage> createState() => _EventDetailsPageState();
+  State<EventDetailsScreen> createState() => _EventDetailsScreenState();
 }
 
-class _EventDetailsPageState extends State<EventDetailsPage> {
+class _EventDetailsScreenState extends State<EventDetailsScreen> {
+  EventModel? event;
+  bool isLoading = true;
+  String? error;
+
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<EventsProvider>().fetchEventById(widget.eventId);
-    });
+    _loadEventDetails();
+  }
+
+  Future<void> _loadEventDetails() async {
+    try {
+      final eventsProvider = Provider.of<EventsProvider>(
+        context,
+        listen: false,
+      );
+      // Find the event in the existing events list
+      final events = eventsProvider.events;
+      final foundEvent = events.firstWhere(
+        (e) => e.id == widget.eventId,
+        orElse: () => throw Exception('Event not found'),
+      );
+
+      setState(() {
+        event = foundEvent;
+        isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        error = e.toString();
+        isLoading = false;
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Consumer<EventsProvider>(
-        builder: (context, eventsProvider, child) {
-          final event = eventsProvider.selectedEvent;
-
-          if (eventsProvider.isLoading || event == null) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          if (eventsProvider.error != null) {
-            return Center(
+      backgroundColor: AppColors.background,
+      appBar: AppBar(
+        title: Text(event?.title ?? 'Event Details'),
+        backgroundColor: AppColors.primary,
+        foregroundColor: Colors.white,
+        elevation: 0,
+      ),
+      body: isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : error != null
+          ? Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(Icons.error_outline, size: 64, color: AppColors.error),
                   const SizedBox(height: 16),
                   Text(
-                    'Error: ${eventsProvider.error}',
-                    style: AppTextStyles.bodyLarge,
+                    'Error loading event',
+                    style: AppTextStyles.titleMedium.copyWith(
+                      color: AppColors.error,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    error!,
+                    style: AppTextStyles.bodyMedium,
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 16),
                   ElevatedButton(
-                    onPressed: () {
-                      eventsProvider.fetchEventById(widget.eventId);
-                    },
-                    child: const Text('Try Again'),
+                    onPressed: _loadEventDetails,
+                    child: const Text('Retry'),
                   ),
                 ],
               ),
-            );
-          }
-
-          return CustomScrollView(
-            slivers: [
-              _buildAppBar(event),
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildEventHeader(event),
-                      const SizedBox(height: 24),
-                      _buildEventDetails(event),
-                      const SizedBox(height: 24),
-                      _buildLocation(event),
-                      const SizedBox(height: 24),
-                      _buildDescription(event),
-                      const SizedBox(height: 24),
-                      _buildAttendees(event),
-                      const SizedBox(height: 32),
-                      _buildActionButtons(event, eventsProvider),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          );
-        },
-      ),
+            )
+          : event == null
+          ? const Center(child: Text('Event not found'))
+          : _buildEventDetails(),
     );
   }
 
-  Widget _buildAppBar(Event event) {
-    return SliverAppBar(
-      expandedHeight: 200,
-      pinned: true,
-      flexibleSpace: FlexibleSpaceBar(
-        background: event.coverImage != null
-            ? Image.network(event.coverImage!, fit: BoxFit.cover)
-            : Container(
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [AppColors.primary, AppColors.primaryDark],
-                  ),
-                ),
-                child: const Icon(Icons.event, size: 64, color: Colors.white),
-              ),
-      ),
-      actions: [
-        PopupMenuButton<String>(
-          onSelected: (value) {
-            switch (value) {
-              case 'edit':
-                Navigator.pushNamed(
-                  context,
-                  '/events/edit',
-                  arguments: event.id,
-                );
-                break;
-              case 'delete':
-                _showDeleteConfirmation(event);
-                break;
-              case 'share':
-                _shareEvent(event);
-                break;
-            }
-          },
-          itemBuilder: (context) => [
-            const PopupMenuItem(
-              value: 'share',
-              child: Row(
-                children: [
-                  Icon(Icons.share),
-                  SizedBox(width: 8),
-                  Text('Share'),
-                ],
-              ),
+  Widget _buildEventDetails() {
+    final event = this.event!;
+    final dateFormat = DateFormat('MMM d, y • h:mm a');
+    final startDate = dateFormat.format(event.startDate);
+    final endDate = dateFormat.format(event.endDate);
+
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Event Image
+          Container(
+            height: 200,
+            width: double.infinity,
+            decoration: BoxDecoration(
+              color: AppColors.primary.withOpacity(0.1),
             ),
-            if (event.canEdit)
-              const PopupMenuItem(
-                value: 'edit',
-                child: Row(
-                  children: [
-                    Icon(Icons.edit),
-                    SizedBox(width: 8),
-                    Text('Edit'),
-                  ],
-                ),
-              ),
-            if (event.canDelete)
-              const PopupMenuItem(
-                value: 'delete',
-                child: Row(
-                  children: [
-                    Icon(Icons.delete, color: AppColors.error),
-                    SizedBox(width: 8),
-                    Text('Delete', style: TextStyle(color: AppColors.error)),
-                  ],
-                ),
-              ),
-          ],
-        ),
-      ],
-    );
-  }
+            child: event.coverImage != null && event.coverImage!.isNotEmpty
+                ? Image.network(
+                    event.coverImage!,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) =>
+                        _buildDefaultEventImage(),
+                  )
+                : _buildDefaultEventImage(),
+          ),
 
-  Widget _buildEventHeader(Event event) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            _buildStatusChip(event.status),
-            const SizedBox(width: 8),
-            _buildTypeChip(event.type),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Text(event.title, style: AppTextStyles.headlineMedium),
-        if (event.ticketPrice > 0) ...[
-          const SizedBox(height: 8),
-          Text(
-            'KES ${event.ticketPrice.toStringAsFixed(2)}',
-            style: AppTextStyles.titleLarge.copyWith(
-              color: AppColors.primary,
-              fontWeight: FontWeight.bold,
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Event Title
+                Text(
+                  event.title,
+                  style: AppTextStyles.headlineMedium.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 8),
+
+                // Event Type and Status
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Text(
+                        event.type ?? 'Unknown',
+                        style: AppTextStyles.bodySmall.copyWith(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.success.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Text(
+                        event.status ?? 'Unknown',
+                        style: AppTextStyles.bodySmall.copyWith(
+                          color: AppColors.success,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+
+                // Description
+                if (event.description != null &&
+                    event.description!.isNotEmpty) ...[
+                  Text(
+                    'Description',
+                    style: AppTextStyles.titleMedium.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    event.description!,
+                    style: AppTextStyles.bodyMedium.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                ],
+
+                // Date and Time
+                _buildInfoSection('Date & Time', [
+                  _buildInfoRow(Icons.schedule, 'Start: $startDate'),
+                  _buildInfoRow(Icons.schedule, 'End: $endDate'),
+                ]),
+
+                // Location
+                if (event.location != null) ...[
+                  const SizedBox(height: 16),
+                  _buildInfoSection('Location', [
+                    if (event.location!.name != null)
+                      _buildInfoRow(Icons.location_on, event.location!.name!),
+                    if (event.location!.address != null)
+                      _buildInfoRow(
+                        Icons.location_on,
+                        event.location!.address!,
+                      ),
+                    if (event.location!.city != null)
+                      _buildInfoRow(Icons.location_city, event.location!.city!),
+                  ]),
+                ],
+
+                // Event Details
+                const SizedBox(height: 16),
+                _buildInfoSection('Event Details', [
+                  _buildInfoRow(Icons.people, 'Capacity: ${event.capacity}'),
+                  _buildInfoRow(
+                    Icons.attach_money,
+                    'Price: ${event.ticketPrice != null && event.ticketPrice! > 0 ? 'KSH ${event.ticketPrice!.toStringAsFixed(2)}' : 'Free'}',
+                  ),
+                  _buildInfoRow(
+                    Icons.group,
+                    'Attendees: ${event.attendees?.length ?? 0}',
+                  ),
+                ]),
+
+                // Organizer
+                if (event.organizer != null) ...[
+                  const SizedBox(height: 16),
+                  _buildInfoSection('Organizer', [
+                    _buildInfoRow(
+                      Icons.person,
+                      '${event.organizer!.firstName} ${event.organizer!.lastName}',
+                    ),
+                    if (event.organizer!.email != null)
+                      _buildInfoRow(Icons.email, event.organizer!.email!),
+                  ]),
+                ],
+
+                const SizedBox(height: 32),
+
+                // Action Buttons
+                Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          // Handle registration
+                        },
+                        icon: const Icon(Icons.add),
+                        label: const Text('Register'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () {
+                          // Handle sharing
+                        },
+                        icon: const Icon(Icons.share),
+                        label: const Text('Share'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppColors.primary,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
         ],
-      ],
-    );
-  }
-
-  Widget _buildEventDetails(Event event) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            _buildDetailRow(
-              Icons.calendar_today,
-              'Start Date',
-              DateFormatter.formatDateTime(event.startDate),
-            ),
-            const SizedBox(height: 12),
-            _buildDetailRow(
-              Icons.calendar_today_outlined,
-              'End Date',
-              DateFormatter.formatDateTime(event.endDate),
-            ),
-            const SizedBox(height: 12),
-            _buildDetailRow(
-              Icons.people,
-              'Capacity',
-              event.capacity != null
-                  ? '${event.attendees.length} / ${event.capacity}'
-                  : '${event.attendees.length} attendees',
-            ),
-            const SizedBox(height: 12),
-            _buildDetailRow(
-              Icons.visibility,
-              'Visibility',
-              event.isPublic ? 'Public' : 'Private',
-            ),
-          ],
-        ),
       ),
     );
   }
 
-  Widget _buildLocation(Event event) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const Icon(Icons.location_on, color: AppColors.primary),
-                const SizedBox(width: 8),
-                Text('Location', style: AppTextStyles.titleMedium),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Text(
-              event.location.name,
-              style: AppTextStyles.bodyLarge.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(event.location.address, style: AppTextStyles.bodyMedium),
-            const SizedBox(height: 4),
-            Text(
-              '${event.location.city}, ${event.location.country}',
+  Widget _buildInfoSection(String title, List<Widget> children) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: AppTextStyles.titleMedium.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 8),
+        ...children,
+      ],
+    );
+  }
+
+  Widget _buildInfoRow(IconData icon, String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        children: [
+          Icon(icon, size: 20, color: AppColors.textSecondary),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              text,
               style: AppTextStyles.bodyMedium.copyWith(
                 color: AppColors.textSecondary,
               ),
             ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDescription(Event event) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Description', style: AppTextStyles.titleMedium),
-            const SizedBox(height: 12),
-            Text(event.description, style: AppTextStyles.bodyMedium),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildAttendees(Event event) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Attendees (${event.attendees.length})',
-                  style: AppTextStyles.titleMedium,
-                ),
-                TextButton(
-                  onPressed: () {
-                    // Navigate to attendees list
-                  },
-                  child: const Text('View All'),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            if (event.attendees.isEmpty)
-              const Text('No attendees yet', style: AppTextStyles.bodyMedium)
-            else
-              // Show first few attendees
-              const Text(
-                'Attendees list would go here',
-                style: AppTextStyles.bodyMedium,
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildActionButtons(Event event, EventsProvider eventsProvider) {
-    final isRegistered = eventsProvider.isUserRegisteredForEvent(event.id);
-    
-    return Row(
-      children: [
-        if (event.ticketPrice > 0) // Show Buy Ticket button for paid events
-          Expanded(
-            child: ElevatedButton(
-              onPressed: isRegistered
-                  ? null
-                  : () => _handleRegistration(event, eventsProvider),
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-              ),
-              child: Text(
-                isRegistered ? 'Registered' : 'Buy Ticket (KSh ${event.ticketPrice})',
-                style: const TextStyle(fontSize: 16),
-              ),
-            ),
-          ),
-        
-        if (event.ticketPrice > 0) const SizedBox(width: 12),
-        
-        // Register button for free events
-        if (event.ticketPrice == 0)
-          Expanded(
-            child: ElevatedButton(
-              onPressed: isRegistered || eventsProvider.isLoading
-                  ? null
-                  : () => _handleRegistration(event, eventsProvider),
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-              ),
-              child: eventsProvider.isLoading
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                      ),
-                    )
-                  : Text(
-                      isRegistered ? 'Registered' : 'Register',
-                      style: const TextStyle(fontSize: 16),
-                    ),
-            ),
-          ),
-        
-        // Add to Calendar button
-        if (event.ticketPrice > 0) const SizedBox(width: 12),
-        IconButton(
-          onPressed: () => _addToCalendar(event),
-          style: IconButton.styleFrom(
-            backgroundColor: Colors.grey[200],
-            padding: const EdgeInsets.all(12),
-          ),
-          icon: const Icon(Icons.calendar_today, color: Colors.black87),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildStatusChip(String status) {
-    Color backgroundColor;
-    Color textColor;
-
-    switch (status) {
-      case 'draft':
-        backgroundColor = Colors.grey.shade200;
-        textColor = Colors.grey.shade800;
-        break;
-      case 'published':
-        backgroundColor = Colors.green.shade100;
-        textColor = Colors.green.shade800;
-        break;
-      case 'cancelled':
-        backgroundColor = Colors.red.shade100;
-        textColor = Colors.red.shade800;
-        break;
-      case 'completed':
-        backgroundColor = Colors.blue.shade100;
-        textColor = Colors.blue.shade800;
-        break;
-      default:
-        backgroundColor = Colors.grey.shade200;
-        textColor = Colors.grey.shade800;
-    }
-
-    return Chip(
-      label: Text(
-        status.toUpperCase(),
-        style: TextStyle(
-          color: textColor,
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-      backgroundColor: backgroundColor,
-    );
-  }
-
-  Widget _buildTypeChip(String type) {
-    return Chip(
-      label: Text(
-        type.toUpperCase(),
-        style: const TextStyle(
-          color: AppColors.primary,
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-      backgroundColor: AppColors.primaryLight.withOpacity(0.1),
-    );
-  }
-
-  Widget _buildDetailRow(IconData icon, String label, String value) {
-    return Row(
-      children: [
-        Icon(icon, size: 20, color: AppColors.primary),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style: AppTextStyles.bodySmall.copyWith(
-                  color: AppColors.textSecondary,
-                ),
-              ),
-              Text(value, style: AppTextStyles.bodyMedium),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Future<void> _handleRegistration(Event event, EventsProvider eventsProvider) async {
-    if (event.ticketPrice > 0) {
-      final authProvider = context.read<AuthProvider>();
-      final userId = authProvider.user?.id;
-      
-      if (userId == null) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Please log in to purchase tickets'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-        return;
-      }
-
-      try {
-        // Show the payment modal
-        final result = await showDialog<bool>(
-          context: context,
-          builder: (context) => PaymentModal(
-            eventId: event.id,
-            amount: event.ticketPrice.toDouble(),
-            userId: userId,
-          ),
-        );
-
-        // If payment was initiated successfully, register for the event
-        if (result == true && mounted) {
-          await eventsProvider.registerForEvent(event.id);
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Successfully registered for the event!'),
-                backgroundColor: Colors.green,
-              ),
-            );
-          }
-        }
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Error processing payment: ${e.toString()}'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-      }
-    } else {
-      // Handle free event registration
-      try {
-        await eventsProvider.registerForEvent(event.id);
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Successfully registered for the free event!'),
-              backgroundColor: Colors.green,
-            ),
-          );
-        }
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Error registering for event: ${e.toString()}'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-      }
-    }
-  }
-
-  void _showDeleteConfirmation(Event event) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete Event'),
-        content: Text('Are you sure you want to delete "${event.title}"?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              context.read<EventsProvider>().deleteEvent(event.id);
-              Navigator.pop(context);
-              Navigator.pop(context);
-            },
-            style: TextButton.styleFrom(foregroundColor: AppColors.error),
-            child: const Text('Delete'),
           ),
         ],
       ),
     );
   }
 
-  void _shareEvent(Event event) {
-    // Implement share functionality
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Share functionality not implemented yet')),
-    );
-  }
-
-  void _addToCalendar(Event event) {
-    // TODO: Implement add to calendar functionality
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Add to calendar functionality coming soon!'),
-        duration: Duration(seconds: 2),
+  Widget _buildDefaultEventImage() {
+    return Container(
+      color: AppColors.primary.withOpacity(0.1),
+      child: Center(
+        child: Icon(Icons.event, size: 60, color: AppColors.primary),
       ),
     );
   }

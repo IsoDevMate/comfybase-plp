@@ -867,7 +867,7 @@ class _CreateEventPageState extends State<CreateEventPage>
     final DateTime now = DateTime.now();
     final DateTime? pickedDate = await showDatePicker(
       context: context,
-      initialDate: isStartDate 
+      initialDate: isStartDate
           ? _startDate ?? now
           : _endDate ?? (_startDate ?? now).add(const Duration(hours: 1)),
       firstDate: isStartDate ? now : _startDate ?? now,
@@ -950,7 +950,7 @@ class _CreateEventPageState extends State<CreateEventPage>
   Widget _buildDateTimePicker({required String label, required IconData icon}) {
     final bool isStartDate = label.toLowerCase().contains('start');
     final selectedDate = isStartDate ? _startDate : _endDate;
-    
+
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(AppDimensions.radiusLg),

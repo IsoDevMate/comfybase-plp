@@ -8,7 +8,7 @@
 // // import '../../domain/entities/event.dart';
 // import '../../../../core/theme/app_colors.dart';
 // import '../../../../core/theme/app_text_styles.dart';
-// import 'package:go_router/go_router.dart';
+//
 
 // class EventsListPage extends StatefulWidget {
 //   const EventsListPage({super.key});
@@ -231,7 +231,6 @@
 //   }
 // }
 
-
 // features/events/presentation/pages/events_list_page.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -241,7 +240,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/theme/app_animations.dart';
 import '../../../../core/theme/app_dimensions.dart';
-import 'package:go_router/go_router.dart';
+
 import 'package:flutter/rendering.dart'; // For ScrollDirection
 import '../../../../core/theme/app_dimensions.dart';
 import '../../data/models/event_model.dart';
@@ -274,7 +273,7 @@ class _EventsListPageState extends State<EventsListPage>
     'Free',
     'Paid',
     'Virtual',
-    'In-Person'
+    'In-Person',
   ];
 
   @override
@@ -292,21 +291,20 @@ class _EventsListPageState extends State<EventsListPage>
     );
 
     // Setup animations
-    _fabScaleAnimation = Tween<double>(
-      begin: 1.0,
-      end: 0.0,
-    ).animate(CurvedAnimation(
-      parent: _fabAnimationController,
-      curve: AppAnimations.easeInOut,
-    ));
+    _fabScaleAnimation = Tween<double>(begin: 1.0, end: 0.0).animate(
+      CurvedAnimation(
+        parent: _fabAnimationController,
+        curve: AppAnimations.easeInOut,
+      ),
+    );
 
-    _headerSlideAnimation = Tween<Offset>(
-      begin: const Offset(0, -1),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _headerAnimationController,
-      curve: AppAnimations.fluidCurve,
-    ));
+    _headerSlideAnimation =
+        Tween<Offset>(begin: const Offset(0, -1), end: Offset.zero).animate(
+          CurvedAnimation(
+            parent: _headerAnimationController,
+            curve: AppAnimations.fluidCurve,
+          ),
+        );
 
     // Start header animation
     _headerAnimationController.forward();
@@ -335,7 +333,7 @@ class _EventsListPageState extends State<EventsListPage>
         _fabAnimationController.forward();
       }
     } else if (_scrollController.position.userScrollDirection ==
-               ScrollDirection.forward) {
+        ScrollDirection.forward) {
       if (!_showFab) {
         setState(() => _showFab = true);
         _fabAnimationController.reverse();
@@ -359,6 +357,39 @@ class _EventsListPageState extends State<EventsListPage>
       appBar: _buildModernAppBar(),
       body: Consumer<EventsProvider>(
         builder: (context, eventsProvider, child) {
+          // Show loading state while initializing
+          if (eventsProvider.isLoading && eventsProvider.events.isEmpty) {
+            return const Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(height: 16),
+                  Text('Loading events...'),
+                ],
+              ),
+            );
+          }
+
+          // Show error state
+          if (eventsProvider.error != null && eventsProvider.events.isEmpty) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.error_outline, size: 64, color: Colors.red),
+                  const SizedBox(height: 16),
+                  Text('Error: ${eventsProvider.error}'),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () => eventsProvider.fetchEvents(),
+                    child: const Text('Retry'),
+                  ),
+                ],
+              ),
+            );
+          }
+
           return CustomScrollView(
             controller: _scrollController,
             slivers: [
@@ -371,13 +402,13 @@ class _EventsListPageState extends State<EventsListPage>
               ),
 
               // Quick stats
-              SliverToBoxAdapter(
-                child: _buildQuickStats(eventsProvider),
-              ),
+              SliverToBoxAdapter(child: _buildQuickStats(eventsProvider)),
 
               // Events list
               SliverPadding(
-                padding: const EdgeInsets.symmetric(horizontal: AppDimensions.paddingMd),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppDimensions.paddingMd,
+                ),
                 sliver: _buildEventsSliverList(eventsProvider),
               ),
 
@@ -454,7 +485,7 @@ class _EventsListPageState extends State<EventsListPage>
         IconButton(
           icon: const Icon(Icons.person_outline),
           tooltip: 'My Events',
-          onPressed: () => context.go('/events/my'),
+          onPressed: () => Navigator.pushNamed(context, '/events/my'),
         ),
       ],
     );
@@ -484,8 +515,8 @@ class _EventsListPageState extends State<EventsListPage>
     String greeting = hour < 12
         ? 'Good Morning'
         : hour < 17
-            ? 'Good Afternoon'
-            : 'Good Evening';
+        ? 'Good Afternoon'
+        : 'Good Evening';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -511,7 +542,8 @@ class _EventsListPageState extends State<EventsListPage>
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         itemCount: _filterOptions.length,
-        separatorBuilder: (_, __) => const SizedBox(width: AppDimensions.spacingSm),
+        separatorBuilder: (_, __) =>
+            const SizedBox(width: AppDimensions.spacingSm),
         itemBuilder: (context, index) {
           final filter = _filterOptions[index];
           final isSelected = _selectedFilter == filter;
@@ -530,16 +562,12 @@ class _EventsListPageState extends State<EventsListPage>
                   : AppColors.surfaceLight,
               selectedColor: AppColors.primary,
               labelStyle: AppTextStyles.labelMedium.copyWith(
-                color: isSelected
-                    ? AppColors.surface
-                    : AppColors.textPrimary,
+                color: isSelected ? AppColors.surface : AppColors.textPrimary,
               ),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(AppDimensions.radiusLg),
                 side: BorderSide(
-                  color: isSelected
-                      ? AppColors.primary
-                      : AppColors.outline,
+                  color: isSelected ? AppColors.primary : AppColors.outline,
                 ),
               ),
             ),
@@ -613,10 +641,7 @@ class _EventsListPageState extends State<EventsListPage>
             fontWeight: FontWeight.bold,
           ),
         ),
-        Text(
-          label,
-          style: AppTextStyles.bodySmall,
-        ),
+        Text(label, style: AppTextStyles.bodySmall),
       ],
     );
   }
@@ -624,69 +649,67 @@ class _EventsListPageState extends State<EventsListPage>
   // Filter events based on search query
   List<EventModel> _filterEvents(List<EventModel> events, String query) {
     if (query.isEmpty) return events;
-    
+
     final queryLower = query.toLowerCase();
     return events.where((event) {
       return event.title.toLowerCase().contains(queryLower) ||
-             event.description.toLowerCase().contains(queryLower) ||
-             (event.location?.name?.toLowerCase().contains(queryLower) ?? false) ||
-             (event.location?.city?.toLowerCase().contains(queryLower) ?? false);
+          event.description.toLowerCase().contains(queryLower) ||
+          (event.location?.name?.toLowerCase().contains(queryLower) ?? false) ||
+          (event.location?.city?.toLowerCase().contains(queryLower) ?? false);
     }).toList();
   }
 
   Widget _buildEventsSliverList(EventsProvider eventsProvider) {
     final filteredEvents = _filterEvents(eventsProvider.events, _searchQuery);
-    
+
     if (eventsProvider.isLoading && eventsProvider.events.isEmpty) {
-      return SliverFillRemaining(
-        child: _buildLoadingState(),
-      );
+      return SliverFillRemaining(child: _buildLoadingState());
     }
 
     if (eventsProvider.error != null && eventsProvider.events.isEmpty) {
-      return SliverFillRemaining(
-        child: _buildErrorState(eventsProvider),
-      );
+      return SliverFillRemaining(child: _buildErrorState(eventsProvider));
     }
 
     if (filteredEvents.isEmpty) {
       return SliverFillRemaining(
-        child: _searchQuery.isNotEmpty ? _buildNoSearchResults() : _buildEmptyState(),
+        child: _searchQuery.isNotEmpty
+            ? _buildNoSearchResults()
+            : _buildEmptyState(),
       );
     }
 
     return SliverList(
-      delegate: SliverChildBuilderDelegate(
-        (context, index) {
-          final event = filteredEvents[index];
+      delegate: SliverChildBuilderDelegate((context, index) {
+        final event = filteredEvents[index];
 
-          return TweenAnimationBuilder<double>(
-            duration: Duration(milliseconds: 300 + (index * 100)),
-            tween: Tween(begin: 0.0, end: 1.0),
-            builder: (context, animation, child) {
-              return Transform.translate(
-                offset: Offset(0, 50 * (1 - animation)),
-                child: Opacity(
-                  opacity: animation,
-                  child: Container(
-                    margin: const EdgeInsets.only(bottom: AppDimensions.marginMd),
-                    child: EventCard(
-                      event: event,
-                      onTap: () {
-                        context.go('/events/details/${event.id}');
-                      },
-                      onEdit: () {
-                        context.go('/events/edit/${event.id}');
-                      },
-                    ),
+        return TweenAnimationBuilder<double>(
+          duration: Duration(milliseconds: 300 + (index * 100)),
+          tween: Tween(begin: 0.0, end: 1.0),
+          builder: (context, animation, child) {
+            return Transform.translate(
+              offset: Offset(0, 50 * (1 - animation)),
+              child: Opacity(
+                opacity: animation,
+                child: Container(
+                  margin: const EdgeInsets.only(bottom: AppDimensions.marginMd),
+                  child: EventCard(
+                    event: event,
+                    onTap: () {
+                      Navigator.pushNamed(
+                        context,
+                        '/events/details/${event.id}',
+                      );
+                    },
+                    onEdit: () {
+                      Navigator.pushNamed(context, '/events/edit/${event.id}');
+                    },
                   ),
                 ),
-              );
-            },
-          );
-        },
-        childCount: filteredEvents.length,
-      ),
+              ),
+            );
+          },
+        );
+      }, childCount: filteredEvents.length),
     );
   }
 
@@ -843,7 +866,7 @@ class _EventsListPageState extends State<EventsListPage>
             ),
             const SizedBox(height: AppDimensions.spacingLg),
             ElevatedButton.icon(
-              onPressed: () => context.go('/events/create'),
+              onPressed: () => Navigator.pushNamed(context, '/events/create'),
               icon: const Icon(Icons.add_circle_outline),
               label: const Text('Create Event'),
               style: ElevatedButton.styleFrom(
@@ -863,7 +886,7 @@ class _EventsListPageState extends State<EventsListPage>
     return ScaleTransition(
       scale: _fabScaleAnimation,
       child: FloatingActionButton.extended(
-        onPressed: () => context.go('/events/create'),
+        onPressed: () => Navigator.pushNamed(context, '/events/create'),
         icon: const Icon(Icons.add),
         label: const Text('Create Event'),
         backgroundColor: AppColors.primary,

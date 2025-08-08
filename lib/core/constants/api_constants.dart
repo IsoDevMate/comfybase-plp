@@ -3,6 +3,11 @@ class ApiConstants {
   static const String baseUrl = 'https://final-year-project-5d85.onrender.com';
   static const String apiVersion = '/api/v1';
 
+  static const String linkedinAuthUrl =
+      'https://final-year-project-5d85.onrender.com/api/v1/auth/linkedin';
+  static const String linkedinCallbackUrl =
+      'https://final-year-project-5d85.onrender.com/api/v1/auth/linkedin/callback';
+
   // Auth endpoints
   static const String register = '$apiVersion/auth/register';
   static const String login = '$apiVersion/auth/login';
