@@ -32,12 +32,22 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
         context,
         listen: false,
       );
-      // Find the event in the existing events list
+
+      // First try to find the event in the existing events list
       final events = eventsProvider.events;
-      final foundEvent = events.firstWhere(
-        (e) => e.id == widget.eventId,
-        orElse: () => throw Exception('Event not found'),
-      );
+      EventModel? foundEvent;
+
+      try {
+        foundEvent = events.firstWhere((e) => e.id == widget.eventId);
+      } catch (e) {
+        // If not found in list, fetch it from API
+        await eventsProvider.fetchEventById(widget.eventId);
+        foundEvent = eventsProvider.selectedEvent;
+      }
+
+      if (foundEvent == null) {
+        throw Exception('Event not found');
+      }
 
       setState(() {
         event = foundEvent;
@@ -151,7 +161,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                         borderRadius: BorderRadius.circular(16),
                       ),
                       child: Text(
-                        event.type ?? 'Unknown',
+                        event.type,
                         style: AppTextStyles.bodySmall.copyWith(
                           color: AppColors.primary,
                           fontWeight: FontWeight.w600,
@@ -169,7 +179,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                         borderRadius: BorderRadius.circular(16),
                       ),
                       child: Text(
-                        event.status ?? 'Unknown',
+                        event.status,
                         style: AppTextStyles.bodySmall.copyWith(
                           color: AppColors.success,
                           fontWeight: FontWeight.w600,
@@ -181,8 +191,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                 const SizedBox(height: 16),
 
                 // Description
-                if (event.description != null &&
-                    event.description!.isNotEmpty) ...[
+                if (event.description.isNotEmpty) ...[
                   Text(
                     'Description',
                     style: AppTextStyles.titleMedium.copyWith(
@@ -191,7 +200,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    event.description!,
+                    event.description,
                     style: AppTextStyles.bodyMedium.copyWith(
                       color: AppColors.textSecondary,
                     ),
@@ -206,32 +215,28 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                 ]),
 
                 // Location
-                if (event.location != null) ...[
-                  const SizedBox(height: 16),
-                  _buildInfoSection('Location', [
-                    if (event.location!.name != null)
-                      _buildInfoRow(Icons.location_on, event.location!.name!),
-                    if (event.location!.address != null)
-                      _buildInfoRow(
-                        Icons.location_on,
-                        event.location!.address!,
-                      ),
-                    if (event.location!.city != null)
-                      _buildInfoRow(Icons.location_city, event.location!.city!),
-                  ]),
-                ],
+                const SizedBox(height: 16),
+                _buildInfoSection('Location', [
+                  _buildInfoRow(Icons.location_on, event.location.name),
+                  _buildInfoRow(Icons.location_on, event.location.address),
+                  _buildInfoRow(Icons.location_city, event.location.city),
+                  _buildInfoRow(Icons.public, event.location.country),
+                ]),
 
                 // Event Details
                 const SizedBox(height: 16),
                 _buildInfoSection('Event Details', [
-                  _buildInfoRow(Icons.people, 'Capacity: ${event.capacity}'),
+                  _buildInfoRow(
+                    Icons.people,
+                    'Capacity: ${event.capacity ?? 'Unlimited'}',
+                  ),
                   _buildInfoRow(
                     Icons.attach_money,
                     'Price: ${event.ticketPrice != null && event.ticketPrice! > 0 ? 'KSH ${event.ticketPrice!.toStringAsFixed(2)}' : 'Free'}',
                   ),
                   _buildInfoRow(
                     Icons.group,
-                    'Attendees: ${event.attendees?.length ?? 0}',
+                    'Attendees: ${event.attendees.length}',
                   ),
                 ]),
 
@@ -241,10 +246,13 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                   _buildInfoSection('Organizer', [
                     _buildInfoRow(
                       Icons.person,
-                      '${event.organizer!.firstName} ${event.organizer!.lastName}',
+                      _getOrganizerName(event.organizer),
                     ),
-                    if (event.organizer!.email != null)
-                      _buildInfoRow(Icons.email, event.organizer!.email!),
+                    if (_getOrganizerEmail(event.organizer) != null)
+                      _buildInfoRow(
+                        Icons.email,
+                        _getOrganizerEmail(event.organizer)!,
+                      ),
                   ]),
                 ],
 
@@ -289,6 +297,22 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
         ],
       ),
     );
+  }
+
+  String _getOrganizerName(dynamic organizer) {
+    if (organizer is Map<String, dynamic>) {
+      final firstName = organizer['firstName'] ?? organizer['first_name'] ?? '';
+      final lastName = organizer['lastName'] ?? organizer['last_name'] ?? '';
+      return '$firstName $lastName'.trim();
+    }
+    return organizer.toString();
+  }
+
+  String? _getOrganizerEmail(dynamic organizer) {
+    if (organizer is Map<String, dynamic>) {
+      return organizer['email'];
+    }
+    return null;
   }
 
   Widget _buildInfoSection(String title, List<Widget> children) {

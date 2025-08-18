@@ -29,6 +29,19 @@ class _CreateEventPageState extends State<CreateEventPage>
   int _currentStep = 0;
   bool _showPreview = false;
 
+  // Form data
+  final _formKey = GlobalKey<FormState>();
+  String _title = '';
+  String _description = '';
+  String _locationName = '';
+  String _locationAddress = '';
+  String _locationCity = '';
+  String _locationCountry = '';
+  String _type = 'conference';
+  String _status = 'draft';
+  int? _capacity;
+  int? _ticketPrice;
+
   late AnimationController _animationController;
   late AnimationController _floatingController;
   late AnimationController _pulseController;
@@ -50,6 +63,7 @@ class _CreateEventPageState extends State<CreateEventPage>
   @override
   void initState() {
     super.initState();
+    _initializeFormData();
     _previewEvent = widget.initialEvent;
 
     _animationController = AnimationController(
@@ -108,6 +122,61 @@ class _CreateEventPageState extends State<CreateEventPage>
 
     _animationController.forward();
     _updateProgress();
+  }
+
+  void _initializeFormData() {
+    if (widget.initialEvent != null) {
+      final event = widget.initialEvent!;
+      _title = event.title;
+      _description = event.description;
+      _locationName = event.location.name;
+      _locationAddress = event.location.address;
+      _locationCity = event.location.city;
+      _locationCountry = event.location.country;
+      _startDate = event.startDate;
+      _endDate = event.endDate;
+      _type = event.type;
+      _status = event.status;
+      _capacity = event.capacity;
+      _ticketPrice = event.ticketPrice;
+    } else {
+      _startDate = DateTime.now().add(const Duration(days: 7));
+      _endDate = DateTime.now().add(const Duration(days: 7, hours: 3));
+    }
+    _updatePreviewEvent();
+  }
+
+  void _updatePreviewEvent() {
+    if (_title.isNotEmpty && _description.isNotEmpty && _locationName.isNotEmpty) {
+      _previewEvent = EventModel(
+        id: widget.initialEvent?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
+        title: _title,
+        description: _description,
+        organizer: widget.initialEvent?.organizer ?? {
+          'id': 'current_user_id',
+          'firstName': 'Current',
+          'lastName': 'User',
+          'email': 'user@example.com'
+        },
+        type: _type,
+        status: _status,
+        startDate: _startDate ?? DateTime.now(),
+        endDate: _endDate ?? DateTime.now().add(const Duration(hours: 3)),
+        location: EventLocation(
+          name: _locationName,
+          address: _locationAddress,
+          city: _locationCity,
+          country: _locationCountry,
+        ),
+        capacity: _capacity,
+        ticketPrice: _ticketPrice,
+        coverImage: widget.initialEvent?.coverImage,
+        sessions: widget.initialEvent?.sessions ?? [],
+        attendees: widget.initialEvent?.attendees ?? [],
+        createdAt: widget.initialEvent?.createdAt ?? DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+    }
   }
 
   void _updateProgress() {
@@ -456,6 +525,13 @@ class _CreateEventPageState extends State<CreateEventPage>
               hint: 'Enter your event title...',
               icon: Icons.title,
               maxLines: 1,
+              value: _title,
+              onChanged: (value) {
+                setState(() {
+                  _title = value;
+                  _updatePreviewEvent();
+                });
+              },
             ),
             const SizedBox(height: 20),
 
@@ -465,6 +541,13 @@ class _CreateEventPageState extends State<CreateEventPage>
               hint: 'Describe your event...',
               icon: Icons.description,
               maxLines: 4,
+              value: _description,
+              onChanged: (value) {
+                setState(() {
+                  _description = value;
+                  _updatePreviewEvent();
+                });
+              },
             ),
             const SizedBox(height: 20),
 
@@ -512,6 +595,7 @@ class _CreateEventPageState extends State<CreateEventPage>
                   child: _buildDateTimePicker(
                     label: 'Start Date & Time',
                     icon: Icons.schedule,
+                    isStartDate: true,
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -519,6 +603,7 @@ class _CreateEventPageState extends State<CreateEventPage>
                   child: _buildDateTimePicker(
                     label: 'End Date & Time',
                     icon: Icons.schedule_outlined,
+                    isStartDate: false,
                   ),
                 ),
               ],
@@ -531,6 +616,13 @@ class _CreateEventPageState extends State<CreateEventPage>
               hint: 'Enter 0 for free events',
               icon: Icons.payments,
               keyboardType: TextInputType.number,
+              value: _ticketPrice?.toString() ?? '',
+              onChanged: (value) {
+                setState(() {
+                  _ticketPrice = int.tryParse(value);
+                  _updatePreviewEvent();
+                });
+              },
             ),
             const SizedBox(height: 20),
 
@@ -540,6 +632,13 @@ class _CreateEventPageState extends State<CreateEventPage>
               hint: 'Leave empty for unlimited',
               icon: Icons.people,
               keyboardType: TextInputType.number,
+              value: _capacity?.toString() ?? '',
+              onChanged: (value) {
+                setState(() {
+                  _capacity = int.tryParse(value);
+                  _updatePreviewEvent();
+                });
+              },
             ),
           ],
         ),
@@ -574,10 +673,6 @@ class _CreateEventPageState extends State<CreateEventPage>
               'Where will it happen?',
               Icons.location_on,
             ),
-            const SizedBox(height: 24),
-
-            // Event Type Toggle
-            _buildEventTypeToggle(),
             const SizedBox(height: 20),
 
             // Address
@@ -585,6 +680,13 @@ class _CreateEventPageState extends State<CreateEventPage>
               label: 'Venue/Address',
               hint: 'Enter venue name or address...',
               icon: Icons.business,
+              value: _locationName,
+              onChanged: (value) {
+                setState(() {
+                  _locationName = value;
+                  _updatePreviewEvent();
+                });
+              },
             ),
             const SizedBox(height: 20),
 
@@ -596,6 +698,13 @@ class _CreateEventPageState extends State<CreateEventPage>
                     label: 'City',
                     hint: 'Enter city...',
                     icon: Icons.location_city,
+                    value: _locationCity,
+                    onChanged: (value) {
+                      setState(() {
+                        _locationCity = value;
+                        _updatePreviewEvent();
+                      });
+                    },
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -604,9 +713,31 @@ class _CreateEventPageState extends State<CreateEventPage>
                     label: 'Country',
                     hint: 'Enter country...',
                     icon: Icons.public,
+                    value: _locationCountry,
+                    onChanged: (value) {
+                      setState(() {
+                        _locationCountry = value;
+                        _updatePreviewEvent();
+                      });
+                    },
                   ),
                 ),
               ],
+            ),
+            const SizedBox(height: 20),
+
+            // Full Address
+            _buildAnimatedTextField(
+              label: 'Full Address',
+              hint: 'Enter complete address...',
+              icon: Icons.location_on,
+              value: _locationAddress,
+              onChanged: (value) {
+                setState(() {
+                  _locationAddress = value;
+                  _updatePreviewEvent();
+                });
+              },
             ),
           ],
         ),
@@ -761,6 +892,8 @@ class _CreateEventPageState extends State<CreateEventPage>
     required IconData icon,
     int maxLines = 1,
     TextInputType? keyboardType,
+    required String value,
+    required Function(String) onChanged,
   }) {
     return Container(
       decoration: BoxDecoration(
@@ -774,8 +907,10 @@ class _CreateEventPageState extends State<CreateEventPage>
         ],
       ),
       child: TextFormField(
+        initialValue: value,
         maxLines: maxLines,
         keyboardType: keyboardType,
+        onChanged: onChanged,
         decoration: InputDecoration(
           labelText: label,
           hintText: hint,
@@ -815,8 +950,8 @@ class _CreateEventPageState extends State<CreateEventPage>
 
   Widget _buildCategorySelector() {
     final categories = [
-      'Conference', 'Workshop', 'Networking', 'Social',
-      'Sports', 'Music', 'Art', 'Technology'
+      'conference', 'seminar', 'workshop', 'meetup',
+      'webinar', 'training', 'expo', 'other'
     ];
 
     return Column(
@@ -833,14 +968,17 @@ class _CreateEventPageState extends State<CreateEventPage>
           spacing: 8,
           runSpacing: 8,
           children: categories.map((category) {
-            final isSelected = false; // Add your selection logic
+            final isSelected = _type == category;
             return AnimatedContainer(
               duration: const Duration(milliseconds: 300),
               child: FilterChip(
-                label: Text(category),
+                label: Text(category[0].toUpperCase() + category.substring(1)),
                 selected: isSelected,
                 onSelected: (selected) {
-                  // Handle selection
+                  setState(() {
+                    _type = category;
+                    _updatePreviewEvent();
+                  });
                 },
                 backgroundColor: Colors.white,
                 selectedColor: AppColors.primary.withOpacity(0.2),
@@ -942,13 +1080,13 @@ class _CreateEventPageState extends State<CreateEventPage>
               );
             }
           }
+          _updatePreviewEvent();
         });
       }
     }
   }
 
-  Widget _buildDateTimePicker({required String label, required IconData icon}) {
-    final bool isStartDate = label.toLowerCase().contains('start');
+  Widget _buildDateTimePicker({required String label, required IconData icon, required bool isStartDate}) {
     final selectedDate = isStartDate ? _startDate : _endDate;
 
     return Container(
@@ -1015,64 +1153,6 @@ class _CreateEventPageState extends State<CreateEventPage>
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildEventTypeToggle() {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.outline.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(AppDimensions.radiusLg),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: _buildToggleOption('Physical', Icons.location_on, true),
-          ),
-          Expanded(
-            child: _buildToggleOption('Virtual', Icons.computer, false),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildToggleOption(String title, IconData icon, bool isSelected) {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 300),
-      margin: const EdgeInsets.all(4),
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-      decoration: BoxDecoration(
-        color: isSelected ? AppColors.primary : Colors.transparent,
-        borderRadius: BorderRadius.circular(AppDimensions.radiusLg),
-        boxShadow: isSelected
-            ? [
-                BoxShadow(
-                  color: AppColors.primary.withOpacity(0.3),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ]
-            : null,
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            icon,
-            color: isSelected ? Colors.white : AppColors.textSecondary,
-            size: 20,
-          ),
-          const SizedBox(width: 8),
-          Text(
-            title,
-            style: AppTextStyles.bodyMedium.copyWith(
-              color: isSelected ? Colors.white : AppColors.textSecondary,
-              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -1240,33 +1320,46 @@ class _CreateEventPageState extends State<CreateEventPage>
   Future<void> _submitEvent() async {
     final eventsProvider = Provider.of<EventsProvider>(context, listen: false);
 
-    // Create a dummy event for demonstration
-    // Replace this with actual form data collection
+    // Validate required fields
+    if (_title.isEmpty || _description.isEmpty || _locationName.isEmpty ||
+        _locationAddress.isEmpty || _locationCity.isEmpty || _locationCountry.isEmpty ||
+        _startDate == null || _endDate == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please fill in all required fields'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    // Create event with actual form data
     final eventData = EventModel(
       id: widget.initialEvent?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
-      title: 'Sample Event Title',
-      description: 'Sample Description',
-      organizer: {
+      title: _title,
+      description: _description,
+      organizer: widget.initialEvent?.organizer ?? {
         'id': 'current_user_id',
         'firstName': 'Current',
         'lastName': 'User',
         'email': 'user@example.com'
       },
-      type: 'conference', // Default type, should come from form
-      status: 'draft', // Default status
-      startDate: DateTime.now().add(const Duration(days: 7)),
-      endDate: DateTime.now().add(const Duration(days: 7, hours: 3)),
+      type: _type,
+      status: _status,
+      startDate: _startDate!,
+      endDate: _endDate!,
       location: EventLocation(
-        name: 'Venue Name',
-        address: '123 Main St',
-        city: 'Nairobi',
-        country: 'Kenya',
+        name: _locationName,
+        address: _locationAddress,
+        city: _locationCity,
+        country: _locationCountry,
       ),
-      capacity: 100, // Default capacity
-      ticketPrice: 0, // Default to free
-      sessions: [],
-      attendees: [],
-      createdAt: DateTime.now(),
+      capacity: _capacity,
+      ticketPrice: _ticketPrice,
+      coverImage: widget.initialEvent?.coverImage,
+      sessions: widget.initialEvent?.sessions ?? [],
+      attendees: widget.initialEvent?.attendees ?? [],
+      createdAt: widget.initialEvent?.createdAt ?? DateTime.now(),
       updatedAt: DateTime.now(),
     );
 
